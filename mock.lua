@@ -1,4 +1,4 @@
-require 'lx/base/class'
+require 'llx/core/class'
 
 local Mock = class 'Mock' {
   __init = function(self)

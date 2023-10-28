@@ -1,4 +1,4 @@
-require 'lx/base'
+require 'llx/core'
 
 local TestLogger = class 'TestLogger' {
   test_suite_name = function() return self.test_suite.__class_name end;
