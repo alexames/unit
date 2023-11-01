@@ -1,6 +1,6 @@
 require 'llx/core/class'
 
-local Mock = class 'Mock' {
+Mock = class 'Mock' {
   __init = function(self)
     self._call_spec = nil
     self._call_count = 0
