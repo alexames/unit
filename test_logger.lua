@@ -16,7 +16,7 @@ local TestLogger = class 'TestLogger' {
            color(green), color(bright_cyan), test_suite:name(), test_name, reset())
   end;
 
-  test_end = function(test_suite, test_name, successful)
+  test_end = function(test_suite, test_name, successful, err)
     if successful then
       printf('%s[       OK ] %s%s.%s%s',
              color(green), color(bright_cyan), test_suite:name(), test_name, reset())

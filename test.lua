@@ -46,12 +46,12 @@ local Test = class 'Test' {
     local failure_count = 0
     for i, test in pairs(self._tests) do
       printer.test_begin(self, test.name)
-      successful, err = self:run_test(test.func)
+      local successful, err = self:run_test(test.func)
       if not successful then
         failure_count = failure_count + 1
         -- failure_list:insert(self._name .. '.' .. name)
       end
-      printer.test_end(self, test.name, successful)
+      printer.test_end(self, test.name, successful, err)
     end
     printer.class_conclusion(self, failure_count)
     return failure_count, #self._tests
