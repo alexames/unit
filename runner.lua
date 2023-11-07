@@ -1,4 +1,4 @@
-require 'llx/core'
+require 'llx'
 
 local test = require 'unit/test'
 local test_logger = require 'unit/test_logger'

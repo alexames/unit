@@ -1,4 +1,4 @@
-require 'llx/core/class'
+require 'llx'
 
 Mock = class 'Mock' {
   __init = function(self)

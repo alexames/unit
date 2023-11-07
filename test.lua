@@ -1,4 +1,4 @@
-require 'llx/core'
+require 'llx'
 
 local test_index = 0
 function test(name)

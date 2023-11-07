@@ -1,4 +1,4 @@
-require 'llx/core/string'
+require 'llx'
 
 local function table_to_string(t)
   local s = '{'
@@ -127,6 +127,15 @@ function Listwise(predicate_generator, expected)
            'not to ' .. msg .. ' the value at every index of',
            '{' .. (','):join(exp_list) .. '}'
   end
+end
+
+local function collect_keys(out, ...)
+  for i, t in ipairs{...} do
+    for k, v in pairs(t) do
+      out[k] = true
+    end
+  end
+  return out
 end
 
 function Tablewise(predicate_generator, expected)
