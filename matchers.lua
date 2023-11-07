@@ -101,7 +101,7 @@ end
 function IsOfType(expected)
   return function(actual)
     return
-      expected.isinstance(actual),
+      isinstance(actual, expected),
       tostring(actual),
       'be of type',
       'not be of type',

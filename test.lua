@@ -7,7 +7,7 @@ function test(name)
 end
 
 local function is_test(t)
-  return Table:isinstance(t) and t.__istest
+  return isinstance(t, Table) and t.__istest
 end
 
 local Test = class 'Test' {
