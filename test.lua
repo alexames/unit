@@ -3,12 +3,42 @@ require 'llx'
 local test_index = 0
 function test(name)
   test_index = test_index + 1
-  return {index = test_index, name=name, __istest=true}
+  local mt = {
+    __sub = function(self, str) 
+      table.insert(self.name, str)
+      return self
+    end,
+
+    __bor = function(self, t)
+       table.insert(self.parameters, t)
+       return self
+    end,
+  }
+  local t = {index = test_index, name={name}, parameter={}, __istest=true}
+  return setmetatable(t, mt)
 end
 
 local function is_test(t)
   return isinstance(t, Table) and t.__istest
 end
+
+local function product(l, ...)
+  local args = {...}
+  return function()
+    for i, v in pairs(l) do
+      
+    end
+  end
+end
+
+a = product({1, 2, 3}, {'a', 'b', 'c'})
+print(a({1, 2, 3}, {'a', 'b', 'c'}))
+print(a({1, 2, 3}, {'a', 'b', 'c'}))
+-- print(a, b)
+-- print(a, b)
+-- for a, b, c in product({1, 2, 3}, {'a', 'b', 'c'}) do
+--   print(a, b, c)
+-- end
 
 local Test = class 'Test' {
   setup = noop;
@@ -17,7 +47,7 @@ local Test = class 'Test' {
   __init = function(self)
     self._tests = self:gather_tests()
     self._name = getmetatable(self).__name or '<name>'
-  end;
+  end,
 
   tests = function(self) return self._tests end;
   name = function(self) return self._name end;
@@ -32,30 +62,39 @@ local Test = class 'Test' {
     end
     result:sort(function(a, b) return a.index < b.index end)
     return result
-  end;
+  end,
 
-  run_test = function(self, func)
+  run_test = function(self, test, ...)
+    printer.test_begin(self, test.name)
+    local successful, err
     self:setup()
-    local successful, err = pcall(func)
+    local successful, err = pcall(test.func, ...)
     self:teardown()
+    printer.test_end(self, test.name, successful, err)
     return successful, err
-  end;
+  end,
 
   run_tests = function(self, printer)
     printer.class_preamble(self)
     local failure_count = 0
     for i, test in pairs(self._tests) do
-      printer.test_begin(self, test.name)
-      local successful, err = self:run_test(test.func)
-      if not successful then
-        failure_count = failure_count + 1
-        -- failure_list:insert(self._name .. '.' .. name)
+      if #test.arguments == 0 then 
+        local successful = self:run_test(test)
+        if not successful then
+          failure_count = failure_count + 1
+        end
+      else
+        for i, arguments in product(table.unpack(test.arguments)) do
+          local successful = self:run_test(test, table.unpack(arguments))
+          if not successful then
+            failure_count = failure_count + 1
+          end
+        end
       end
-      printer.test_end(self, test.name, successful, err)
     end
     printer.class_conclusion(self, failure_count)
     return failure_count, #self._tests
-  end;
+  end,
 }
 
 return {
