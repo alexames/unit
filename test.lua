@@ -64,7 +64,7 @@ local Test = class 'Test' {
     return result
   end,
 
-  run_test = function(self, test, ...)
+  run_test = function(self, printer, test, ...)
     printer.test_begin(self, test.name)
     local successful, err
     self:setup()
@@ -78,8 +78,8 @@ local Test = class 'Test' {
     printer.class_preamble(self)
     local failure_count = 0
     for i, test in pairs(self._tests) do
-      if #test.arguments == 0 then 
-        local successful = self:run_test(test)
+      if test.arguments == nil or #test.arguments == 0 then
+        local successful = self:run_test(printer, test)
         if not successful then
           failure_count = failure_count + 1
         end

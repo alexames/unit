@@ -13,16 +13,16 @@ local TestLogger = class 'TestLogger' {
 
   test_begin = function(test_suite, test_name)
     printf('%s[ Run      ] %s%s.%s%s',
-           color(green), color(bright_cyan), test_suite:name(), test_name, reset())
+           color(green), color(bright_cyan), test_suite:name(), table.concat(test_name, '.'), reset())
   end;
 
   test_end = function(test_suite, test_name, successful, err)
     if successful then
       printf('%s[       OK ] %s%s.%s%s',
-             color(green), color(bright_cyan), test_suite:name(), test_name, reset())
+             color(green), color(bright_cyan), test_suite:name(), table.concat(test_name, '.'), reset())
     else
       printf('%s[  FAILURE ] %s%s.%s%s\n%s',
-             color(red), color(bright_cyan), test_suite:name(), test_name, reset(), err)
+             color(red), color(bright_cyan), test_suite:name(), table.concat(test_name, '.'), reset(), err)
     end
   end;
 
