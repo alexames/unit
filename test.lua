@@ -22,24 +22,6 @@ local function is_test(t)
   return isinstance(t, Table) and t.__istest
 end
 
-local function product(l, ...)
-  local args = {...}
-  return function()
-    for i, v in pairs(l) do
-      
-    end
-  end
-end
-
-a = product({1, 2, 3}, {'a', 'b', 'c'})
-print(a({1, 2, 3}, {'a', 'b', 'c'}))
-print(a({1, 2, 3}, {'a', 'b', 'c'}))
--- print(a, b)
--- print(a, b)
--- for a, b, c in product({1, 2, 3}, {'a', 'b', 'c'}) do
---   print(a, b, c)
--- end
-
 local Test = class 'Test' {
   setup = noop;
   teardown = noop;
