@@ -114,7 +114,8 @@ function Listwise(predicate_generator, expected)
     local result = true
     local act, msg, nmsg, exp
     local act_list, exp_list = {}, {}
-    for i=1, max(#actual, #expected) do
+    local largest_len = #actual > #expected and #actual or #expected
+    for i=1, largest_len do
       local predicate = predicate_generator(expected[i])
       local local_result
       local_result, act, msg, nmsg, exp = predicate(actual[i])
