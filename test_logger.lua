@@ -1,4 +1,12 @@
-require 'llx'
+local llx = require 'llx'
+
+local class = llx.class
+local red = llx.debug.red
+local green = llx.debug.green
+local bright_cyan = llx.debug.bright_cyan
+local color = llx.debug.color
+local reset = llx.debug.reset
+local printf = llx.printf
 
 local TestLogger = class 'TestLogger' {
   test_suite_name = function() return self.test_suite.__class_name end;

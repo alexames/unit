@@ -1,4 +1,7 @@
-require 'llx'
+local llx = require 'llx'
+
+local class = llx.class
+local isinstance = llx.isinstance
 
 local test_index = 0
 function test(name)
@@ -19,12 +22,12 @@ function test(name)
 end
 
 local function is_test(t)
-  return isinstance(t, Table) and t.__istest
+  return isinstance(t, llx.Table) and t.__istest
 end
 
 local Test = class 'Test' {
-  setup = noop;
-  teardown = noop;
+  setup = llx.noop;
+  teardown = llx.noop;
 
   __init = function(self)
     self._tests = self:gather_tests()
@@ -36,7 +39,7 @@ local Test = class 'Test' {
 
   gather_tests = function(self)
     -- Convert this to a List
-    local result = Table()
+    local result = llx.Table()
     for key, testfunc in pairs(getmetatable(self)) do
       if is_test(key) then
         result:insert({index=key.index, name=key.name, func=testfunc})

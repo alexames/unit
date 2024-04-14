@@ -1,10 +1,11 @@
-require 'llx'
-
+local llx = require 'llx'
 local test = require 'unit/test'
 local test_logger = require 'unit/test_logger'
 
+local class = llx.class
+
 -- This is a list of classes that have been registered with unit.
-local global_test_suites = Table{}
+local global_test_suites = llx.Table{}
 function test_class(name)
   return function(class_definition)
     local cls = class(name):extends(test.Test)(class_definition)
@@ -17,7 +18,7 @@ function run_unit_tests(filter, logger)
   logger = logger or test_logger.TestLogger()
   local total_failure_count = 0
   local total_test_count = 0
-  local failure_list = Table()
+  local failure_list = llx.Table()
   logger.prelude()
   for _, cls in ipairs(test_suites) do
     if not filter or cls.__name:match(filter) then

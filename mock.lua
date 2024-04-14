@@ -1,4 +1,6 @@
-require 'llx'
+local llx = require 'llx'
+
+local class = llx.class
 
 Mock = class 'Mock' {
   __init = function(self)

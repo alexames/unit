@@ -1,4 +1,6 @@
-require 'llx'
+local llx = require 'llx'
+
+local isinstance = llx.isinstance
 
 local function table_to_string(t)
   local s = '{'
