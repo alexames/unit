@@ -1,8 +1,8 @@
-local expects = require 'unit/expects'
-local matchers = require 'unit/matchers'
-local mock = require 'unit/mock'
-local runner = require 'unit/runner'
-local test = require 'unit/test'
+local expects = require 'unit.expects'
+local matchers = require 'unit.matchers'
+local mock = require 'unit.mock'
+local runner = require 'unit.runner'
+local test = require 'unit.test'
 
 return {
   EXPECT_THAT = expects.EXPECT_THAT,

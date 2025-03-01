@@ -1,6 +1,6 @@
 local llx = require 'llx'
-local test = require 'unit/test'
-local test_logger = require 'unit/test_logger'
+local test = require 'unit.test'
+local test_logger = require 'unit.test_logger'
 
 local class = llx.class
 

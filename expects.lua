@@ -1,5 +1,5 @@
-require 'unit/matchers'
-local truthy, falsey = require 'llx/truthy' {'truthy', 'falsey'}
+require 'unit.matchers'
+local truthy, falsey = require 'llx.truthy' {'truthy', 'falsey'}
 
 local fmt = 'expected %s\n  %s\nto %s\n  %s'
 function EXPECT_THAT(actual, predicate, level, s)
