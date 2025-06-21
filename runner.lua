@@ -6,14 +6,14 @@ local class = llx.class
 
 -- This is a list of classes that have been registered with unit.
 local global_test_suites = llx.Table{}
-function test_class(name)
+local function test_class(name)
   return function(class_definition)
     local cls = class(name):extends(test.Test)(class_definition)
     global_test_suites:insert(cls)
   end
 end
 
-function run_unit_tests(filter, logger)
+local function run_unit_tests(filter, logger)
   local test_suites = global_test_suites
   logger = logger or test_logger.TestLogger()
   local total_failure_count = 0

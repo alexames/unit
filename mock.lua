@@ -38,7 +38,7 @@ Mock = class 'Mock' {
   end;
 
   __close = function(self)
-    expectation = self._call_count_expectation
+    local expectation = self._call_count_expectation
     if expectation then
       EXPECT_THAT(self._call_count, expectation, 'call count')
     end

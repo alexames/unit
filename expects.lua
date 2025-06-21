@@ -4,7 +4,7 @@ local truthy, falsey = require 'llx.truthy' {'truthy', 'falsey'}
 local fmt = 'expected %s\n  %s\nto %s\n  %s'
 function EXPECT_THAT(actual, predicate, level, s)
   level = level or 2
-  result, act, msg, nmsg, exp = predicate(actual, false)
+  local result, act, msg, nmsg, exp = predicate(actual, false)
   if not result then
     error(fmt:format(s or '', act, msg, exp), level)
   end
@@ -30,19 +30,19 @@ function EXPECT_NE(actual, expected, level)
   EXPECT_THAT(actual, Not(Equals(expected)), level)
 end
 
-function EXPECT_TRUTHY(value)
+function EXPECT_TRUTHY(value, level)
   level = level or 3
   EXPECT_TRUE(truthy(value), level)
 end
 
-function EXPECT_FALSEY(value)
+function EXPECT_FALSEY(value, level)
   level = level or 3
   EXPECT_FALSE(truthy(value), level)
 end
 
-function EXPECT_ERROR(fn, ...)
+function EXPECT_ERROR(fn, level, ...)
   local successful, exception = pcall(fn, ...)
-  EXPECT_FALSEY(success, level)
+  EXPECT_FALSEY(successful, level)
 end
 
 return {
