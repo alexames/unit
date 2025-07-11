@@ -39,18 +39,20 @@ end
 --- Base class for test suites.
 -- Users should subclass this when defining test classes.
 Test = class 'Test' {
-  setup = llx.noop;
-  teardown = llx.noop;
+  setup = llx.noop,
+  teardown = llx.noop,
 
   __init = function(self)
+    self._initialized = true
     self._tests = self:gather_tests()
     self._name = getmetatable(self).__name or '<name>'
-  end;
+  end,
 
   --- Returns gathered test metadata
-  tests = function(self) return self._tests end;
+  tests = function(self) return self._tests end,
+
   --- Returns the name of the test class
-  name = function(self) return self._name end;
+  name = function(self) return self._name end,
 
   --- Collects all test functions defined using `test` decorator
   gather_tests = function(self)
@@ -77,6 +79,11 @@ Test = class 'Test' {
   --- Runs all collected tests
   -- Handles parameterized tests (not yet implemented)
   run_tests = function(self, printer)
+    if not self._initialized then
+      error(string.format('a test_class was not initialized. '
+                          .. 'Remember to call `self.Test.__init`'),
+            3)
+    end
     printer.class_preamble(self)
     local failure_count = 0
     for _, test in pairs(self._tests) do
