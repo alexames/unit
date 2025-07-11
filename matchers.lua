@@ -1,7 +1,12 @@
-local llx = require 'llx'
+-- matchers.lua
+-- Common matcher predicates for assertions
+--
+-- @module unit.matchers
 
+local llx = require 'llx'
 local isinstance = llx.isinstance
 
+--- Converts a table to a formatted string for display.
 local function table_to_string(t)
   local s = '{'
   local first = true
@@ -16,6 +21,9 @@ local function table_to_string(t)
   return s .. '}'
 end
 
+--- Negates a matcher predicate.
+-- @param predicate The matcher to negate
+-- @return A new matcher predicate
 function Not(predicate)
   return function(actual)
     local result, act, msg, nmsg, exp = predicate(actual)
@@ -23,100 +31,103 @@ function Not(predicate)
   end
 end
 
+--- Checks equality with expected value.
 function Equals(expected)
   return function(actual)
-    return
-      actual == expected,
-      tostring(actual),
-      'be equal to',
-      'be not equal to',
-      tostring(expected)
+    return actual == expected,
+           tostring(actual),
+           'be equal to',
+           'be not equal to',
+           tostring(expected)
   end
 end
 
+--- Checks if actual > expected
 function GreaterThan(expected)
   return function(actual)
-    return
-      actual > expected,
-      tostring(actual),
-      'be greater than',
-      'be not greater than',
-      tostring(expected)
+    return actual > expected,
+           tostring(actual),
+           'be greater than',
+           'be not greater than',
+           tostring(expected)
   end
 end
 
+--- Checks if actual >= expected
 function GreaterThanOrEqual(expected)
   return function(actual)
-    return
-      actual >= expected,
-      tostring(actual),
-      'be greater than or equal to',
-      'be not greater than or equal to',
-      tostring(expected)
+    return actual >= expected,
+           tostring(actual),
+           'be greater than or equal to',
+           'be not greater than or equal to',
+           tostring(expected)
   end
 end
 
+--- Checks if actual < expected
 function LessThan(expected)
   return function(actual)
-    return
-      actual < expected,
-      tostring(actual),
-      'be less than',
-      'be not less than',
-      tostring(expected)
+    return actual < expected,
+           tostring(actual),
+           'be less than',
+           'be not less than',
+           tostring(expected)
   end
 end
 
+--- Checks if actual <= expected
 function LessThanOrEqual(expected)
   return function(actual)
-    return
-      actual <= expected,
-      tostring(actual),
-      'be less than or equal to',
-      'be not less than or equal to',
-      tostring(expected)
+    return actual <= expected,
+           tostring(actual),
+           'be less than or equal to',
+           'be not less than or equal to',
+           tostring(expected)
   end
 end
 
+--- Checks if actual string starts with expected prefix.
 function StartsWith(expected)
   return function(actual)
-    return
-      actual:startswith(expected),
-      tostring(actual),
-      'start with',
-      'not start with',
-      tostring(expected)
+    return actual:startswith(expected),
+           tostring(actual),
+           'start with',
+           'not start with',
+           tostring(expected)
   end
 end
 
+--- Checks if actual string ends with expected suffix.
 function EndsWith(expected)
   return function(actual)
-    return
-      actual:endswith(expected),
-      tostring(actual),
-      'end with',
-      'not end with',
-      tostring(expected)
+    return actual:endswith(expected),
+           tostring(actual),
+           'end with',
+           'not end with',
+           tostring(expected)
   end
 end
 
+--- Checks if actual is of expected type/class.
 function IsOfType(expected)
   return function(actual)
-    return
-      isinstance(actual, expected),
-      tostring(actual),
-      'be of type',
-      'not be of type',
-      tostring(expected)
+    return isinstance(actual, expected),
+           tostring(actual),
+           'be of type',
+           'not be of type',
+           tostring(expected)
   end
 end
 
+--- Applies a matcher element-wise to two lists.
+-- @param predicate_generator Function producing matchers
+-- @param expected The expected list
 function Listwise(predicate_generator, expected)
   return function(actual)
     local result = true
     local act, msg, nmsg, exp
     local act_list, exp_list = {}, {}
-    local largest_len = #actual > #expected and #actual or #expected
+    local largest_len = math.max(#actual, #expected)
     for i=1, largest_len do
       local predicate = predicate_generator(expected[i])
       local local_result
@@ -132,22 +143,26 @@ function Listwise(predicate_generator, expected)
   end
 end
 
+--- Gathers keys from multiple tables.
 local function collect_keys(out, ...)
-  for i, t in ipairs{...} do
-    for k, v in pairs(t) do
+  for _, t in ipairs{...} do
+    for k in pairs(t) do
       out[k] = true
     end
   end
   return out
 end
 
+--- Applies a matcher key-wise to two tables.
+-- @param predicate_generator Function producing matchers
+-- @param expected The expected table
 function Tablewise(predicate_generator, expected)
   return function(actual)
     local result = true
     local act, msg, nmsg, exp
     local act_list, exp_list = {}, {}
     local keys = collect_keys({}, actual, expected)
-    for k, _ in pairs(keys) do
+    for k in pairs(keys) do
       local predicate = predicate_generator(expected[k])
       local local_result
       local_result, act, msg, nmsg, exp = predicate(actual[k])
