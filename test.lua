@@ -70,7 +70,7 @@ local Test = class 'Test' {
   run_test = function(self, printer, test, ...)
     printer.test_begin(self, test.name)
     self:setup()
-    local successful, err = pcall(test.func, ...)
+    local successful, err = pcall(test.func, self, ...)
     self:teardown()
     printer.test_end(self, test.name, successful, err)
     return successful, err
