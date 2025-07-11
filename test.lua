@@ -13,7 +13,7 @@ local test_index = 0
 -- Supports chained syntax: ['name' | test] = func
 -- @param name Test name (string)
 -- @return A marker object that supports __bor and __sub
-function test(name)
+local function test(name)
   test_index = test_index + 1
   local mt = {
     -- Allows: ['foo' | test] __sub 'bar' to extend name
@@ -38,7 +38,7 @@ end
 
 --- Base class for test suites.
 -- Users should subclass this when defining test classes.
-Test = class 'Test' {
+local Test = class 'Test' {
   setup = llx.noop,
   teardown = llx.noop,
 
@@ -107,5 +107,6 @@ Test = class 'Test' {
 }
 
 return {
+  test = test,
   Test = Test,
 }

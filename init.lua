@@ -9,6 +9,7 @@ local mock = require 'unit.mock'
 local runner = require 'unit.runner'
 local test = require 'unit.test'
 
+
 --- Unit testing framework root module.
 -- Provides access to core assertions, matchers, mocks, test registration, and execution.
 --
@@ -16,7 +17,7 @@ local test = require 'unit.test'
 -- local unit = require 'unit'
 -- unit.EXPECT_EQ(actual, expected)
 -- unit.test_class 'MyTest' { ... }
-return {
+local test_env = {
   -- Assertions
   EXPECT_THAT = expects.EXPECT_THAT,
   EXPECT_TRUE = expects.EXPECT_TRUE,
@@ -44,4 +45,16 @@ return {
   run_unit_tests = runner.run_unit_tests,
   test_class = runner.test_class,
   Test = test.Test,
+  test = test.test
 }
+
+local function create_test_env(fallback_env)
+  return setmetatable(test_env, {
+    __index = fallback_env,
+    __newindex = fallback_env,
+  })
+end
+
+test_env.create_test_env = create_test_env
+
+return test_env
