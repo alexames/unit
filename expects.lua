@@ -55,13 +55,25 @@ end
 --- Asserts that the value is falsey
 function EXPECT_FALSEY(value, level)
   level = level or 3
-  EXPECT_FALSE(truthy(value), level)
+  EXPECT_TRUE(falsey(value), level)
 end
 
 --- Asserts that the function errors when called
-function EXPECT_ERROR(fn, level, ...)
+function EXPECT_ERROR(fn, expected, level, ...)
+  level = level or 3
   local successful, exception = pcall(fn, ...)
-  EXPECT_FALSEY(successful, level)
+  if expected then
+    if type(expected) == 'string' and type(exception) == 'string' then
+      local path_colon = exception:find(':', 1, true)
+      local line_colon = exception:find(':', path_colon + 1, true)
+      EXPECT_EQ(exception:sub(line_colon + 2), expected, level + 1)
+    else
+      EXPECT_EQ(exception, expected, level + 1)
+    end
+  end
+  if successful then
+    error('expected function to raise error', level)
+  end
 end
 
 return {
