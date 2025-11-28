@@ -46,16 +46,79 @@ function EXPECT_NE(actual, expected, level)
   EXPECT_THAT(actual, Not(Equals(expected)), level)
 end
 
---- Asserts that the value is truthy
-function EXPECT_TRUTHY(value, level)
+--- Asserts that actual < expected
+function EXPECT_LT(actual, expected, level)
   level = level or 3
-  EXPECT_TRUE(truthy(value), level)
+  EXPECT_THAT(actual, LessThan(expected), level)
 end
 
---- Asserts that the value is falsey
-function EXPECT_FALSEY(value, level)
+--- Asserts that actual <= expected
+function EXPECT_LE(actual, expected, level)
   level = level or 3
-  EXPECT_TRUE(falsey(value), level)
+  EXPECT_THAT(actual, LessThanOrEqual(expected), level)
+end
+
+--- Asserts that actual > expected
+function EXPECT_GT(actual, expected, level)
+  level = level or 3
+  EXPECT_THAT(actual, GreaterThan(expected), level)
+end
+
+--- Asserts that actual >= expected
+function EXPECT_GE(actual, expected, level)
+  level = level or 3
+  EXPECT_THAT(actual, GreaterThanOrEqual(expected), level)
+end
+
+--- Asserts that actual is within epsilon of expected
+function EXPECT_NEAR(actual, expected, epsilon, level)
+  level = level or 3
+  EXPECT_THAT(actual, Near(expected, epsilon), level)
+end
+
+--- Asserts that value is nil
+function EXPECT_NIL(value, level)
+  level = level or 3
+  EXPECT_THAT(value, Equals(nil), level)
+end
+
+--- Asserts that value is not nil
+function EXPECT_NOT_NIL(value, level)
+  level = level or 3
+  EXPECT_THAT(value, Not(Equals(nil)), level)
+end
+
+--- Asserts that string contains substring
+function EXPECT_CONTAINS(str, substring, level)
+  level = level or 3
+  EXPECT_THAT(str, Contains(substring), level)
+end
+
+--- Asserts that string matches pattern
+function EXPECT_MATCHES(str, pattern, level)
+  level = level or 3
+  EXPECT_THAT(str, Matches(pattern), level)
+end
+
+--- Asserts that collection is empty
+function EXPECT_EMPTY(collection, level)
+  level = level or 3
+  EXPECT_THAT(collection, IsEmpty(), level)
+end
+
+--- Asserts that collection has size n
+function EXPECT_SIZE(collection, n, level)
+  level = level or 3
+  EXPECT_THAT(collection, HasSize(n), level)
+end
+
+--- Asserts that the function does not error when called
+function EXPECT_NO_ERROR(fn, level, ...)
+  level = level or 3
+  local successful, exception = pcall(fn, ...)
+  if not successful then
+    error('expected function not to raise error, but got: ' .. tostring(exception), level)
+  end
 end
 
 --- Asserts that the function errors when called
@@ -76,10 +139,37 @@ function EXPECT_ERROR(fn, expected, level, ...)
   end
 end
 
+--- Asserts that the value is truthy
+function EXPECT_TRUTHY(value, level)
+  level = level or 3
+  EXPECT_TRUE(truthy(value), level)
+end
+
+--- Asserts that the value is falsey
+function EXPECT_FALSEY(value, level)
+  level = level or 3
+  EXPECT_TRUE(falsey(value), level)
+end
+
 return {
   EXPECT_THAT=EXPECT_THAT,
   EXPECT_TRUE=EXPECT_TRUE,
   EXPECT_FALSE=EXPECT_FALSE,
   EXPECT_EQ=EXPECT_EQ,
   EXPECT_NE=EXPECT_NE,
+  EXPECT_LT=EXPECT_LT,
+  EXPECT_LE=EXPECT_LE,
+  EXPECT_GT=EXPECT_GT,
+  EXPECT_GE=EXPECT_GE,
+  EXPECT_NEAR=EXPECT_NEAR,
+  EXPECT_NIL=EXPECT_NIL,
+  EXPECT_NOT_NIL=EXPECT_NOT_NIL,
+  EXPECT_CONTAINS=EXPECT_CONTAINS,
+  EXPECT_MATCHES=EXPECT_MATCHES,
+  EXPECT_EMPTY=EXPECT_EMPTY,
+  EXPECT_SIZE=EXPECT_SIZE,
+  EXPECT_NO_ERROR=EXPECT_NO_ERROR,
+  EXPECT_ERROR=EXPECT_ERROR,
+  EXPECT_TRUTHY=EXPECT_TRUTHY,
+  EXPECT_FALSEY=EXPECT_FALSEY,
 }

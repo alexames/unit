@@ -176,6 +176,197 @@ function Tablewise(predicate_generator, expected)
   end
 end
 
+--- Checks if value is within epsilon of expected (floating point comparison)
+function Near(expected, epsilon)
+  return function(actual)
+    local diff = math.abs(actual - expected)
+    return diff <= epsilon,
+           tostring(actual),
+           string.format('be within %s of', tostring(epsilon)),
+           string.format('not be within %s of', tostring(epsilon)),
+           tostring(expected)
+  end
+end
+
+--- Checks if value is NaN
+function IsNaN()
+  return function(actual)
+    local is_nan = actual ~= actual
+    return is_nan,
+           tostring(actual),
+           'be NaN',
+           'not be NaN',
+           'NaN'
+  end
+end
+
+--- Checks if value > 0
+function IsPositive()
+  return function(actual)
+    return actual > 0,
+           tostring(actual),
+           'be positive',
+           'not be positive',
+           '> 0'
+  end
+end
+
+--- Checks if value < 0
+function IsNegative()
+  return function(actual)
+    return actual < 0,
+           tostring(actual),
+           'be negative',
+           'not be negative',
+           '< 0'
+  end
+end
+
+--- Checks if value is between min and max (inclusive)
+function IsBetween(min, max)
+  return function(actual)
+    return actual >= min and actual <= max,
+           tostring(actual),
+           string.format('be between %s and %s', tostring(min), tostring(max)),
+           string.format('not be between %s and %s', tostring(min), tostring(max)),
+           string.format('[%s, %s]', tostring(min), tostring(max))
+  end
+end
+
+--- Checks if string contains substring
+function Contains(substring)
+  return function(actual)
+    local contains = type(actual) == 'string' and actual:find(substring, 1, true) ~= nil
+    return contains,
+           tostring(actual),
+           'contain',
+           'not contain',
+           tostring(substring)
+  end
+end
+
+--- Checks if string matches pattern
+function Matches(pattern)
+  return function(actual)
+    local matches = type(actual) == 'string' and actual:match(pattern) ~= nil
+    return matches,
+           tostring(actual),
+           'match pattern',
+           'not match pattern',
+           tostring(pattern)
+  end
+end
+
+--- Checks if string or collection is empty
+function IsEmpty()
+  return function(actual)
+    local is_empty = false
+    if type(actual) == 'string' then
+      is_empty = #actual == 0
+    elseif type(actual) == 'table' then
+      is_empty = next(actual) == nil
+    end
+    return is_empty,
+           tostring(actual),
+           'be empty',
+           'not be empty',
+           '{} or ""'
+  end
+end
+
+--- Checks if string has specific length
+function HasLength(n)
+  return function(actual)
+    local has_length = type(actual) == 'string' and #actual == n
+    return has_length,
+           tostring(actual),
+           'have length',
+           'not have length',
+           tostring(n)
+  end
+end
+
+--- Checks if collection has specific size
+function HasSize(n)
+  return function(actual)
+    local size = 0
+    if type(actual) == 'table' then
+      for _ in pairs(actual) do
+        size = size + 1
+      end
+    end
+    return size == n,
+           tostring(actual),
+           'have size',
+           'not have size',
+           tostring(n)
+  end
+end
+
+--- Checks if collection contains element
+function ContainsElement(element)
+  return function(actual)
+    local contains = false
+    if type(actual) == 'table' then
+      for _, v in pairs(actual) do
+        if v == element then
+          contains = true
+          break
+        end
+      end
+    end
+    return contains,
+           tostring(actual),
+           'contain element',
+           'not contain element',
+           tostring(element)
+  end
+end
+
+--- Checks if all matchers pass
+function AllOf(...)
+  local matchers = {...}
+  return function(actual)
+    for _, matcher in ipairs(matchers) do
+      local result = matcher(actual)
+      if not result then
+        return false,
+               tostring(actual),
+               'match all conditions',
+               'not match all conditions',
+               'all matchers'
+      end
+    end
+    return true,
+           tostring(actual),
+           'match all conditions',
+           'not match all conditions',
+           'all matchers'
+  end
+end
+
+--- Checks if any matcher passes
+function AnyOf(...)
+  local matchers = {...}
+  return function(actual)
+    for _, matcher in ipairs(matchers) do
+      local result = matcher(actual)
+      if result then
+        return true,
+               tostring(actual),
+               'match any condition',
+               'not match any condition',
+               'any matcher'
+      end
+    end
+    return false,
+           tostring(actual),
+           'match any condition',
+           'not match any condition',
+           'any matcher'
+  end
+end
+
 return {
   Not=Not,
   Equals=Equals,
@@ -188,4 +379,17 @@ return {
   IsOfType=IsOfType,
   Listwise=Listwise,
   Tablewise=Tablewise,
+  Near=Near,
+  IsNaN=IsNaN,
+  IsPositive=IsPositive,
+  IsNegative=IsNegative,
+  IsBetween=IsBetween,
+  Contains=Contains,
+  Matches=Matches,
+  IsEmpty=IsEmpty,
+  HasLength=HasLength,
+  HasSize=HasSize,
+  ContainsElement=ContainsElement,
+  AllOf=AllOf,
+  AnyOf=AnyOf,
 }
