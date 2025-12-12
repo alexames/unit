@@ -8,6 +8,7 @@ local matchers = require 'unit.matchers'
 local mock = require 'unit.mock'
 local runner = require 'unit.runner'
 local test = require 'unit.test'
+local jest_style = require 'unit.jest_style'
 
 
 --- Unit testing framework root module.
@@ -73,7 +74,15 @@ local test_env = {
   run_unit_tests = runner.run_unit_tests,
   test_class = runner.test_class,
   Test = test.Test,
-  test = test.test
+  test = test.test,
+
+  -- Jest-style API
+  describe = jest_style.describe,
+  it = jest_style.it,
+  expect = jest_style.expect,
+  beforeEach = jest_style.beforeEach,
+  afterEach = jest_style.afterEach,
+  run_jest_tests = jest_style.run_jest_tests,
 }
 
 local function create_test_env(fallback_env)

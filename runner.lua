@@ -12,6 +12,9 @@ local class = llx.class
 -- This is a list of classes that have been registered with unit.
 local global_test_suites = llx.Table{}
 
+-- Import jest test suites
+local jest_style = require 'unit.jest_style'
+
 --- Registers a test class.
 -- Usage:
 --   test_class 'MySuite' {
@@ -27,7 +30,7 @@ local function test_class(name)
   end
 end
 
---- Executes all registered test classes.
+--- Executes all registered test classes (both GoogleTest-style and Jest-style).
 -- @param[opt] filter A string to match against test class names
 -- @param[opt] logger An optional logger object to capture output
 local function run_unit_tests(filter, logger)
@@ -38,6 +41,8 @@ local function run_unit_tests(filter, logger)
   local failure_list = llx.Table()
 
   logger.prelude()
+  
+  -- Run GoogleTest-style tests
   for _, cls in ipairs(test_suites) do
     if not filter or cls.__name:match(filter) then
       local test_object = cls()
@@ -46,6 +51,17 @@ local function run_unit_tests(filter, logger)
       total_test_count = total_test_count + tests_ran
     end
   end
+  
+  -- Run Jest-style tests
+  for _, cls in ipairs(jest_style.jest_test_suites) do
+    if not filter or cls.__name:match(filter) then
+      local test_object = cls(cls.__name, cls.__jest_tests)
+      local failed_tests, tests_ran = test_object:run_tests(logger)
+      total_failure_count = total_failure_count + failed_tests
+      total_test_count = total_test_count + tests_ran
+    end
+  end
+  
   logger.finale(total_failure_count, total_test_count)
 end
 
