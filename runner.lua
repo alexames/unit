@@ -52,17 +52,36 @@ local function run_unit_tests(filter, logger)
     end
   end
   
-  -- Run Jest-style tests
+  -- Run Jest-style tests (always use JestLogger for jest tests)
+  local jest_logger = nil
+  local has_jest_tests = false
+  for _, cls in ipairs(jest_style.jest_test_suites) do
+    if not filter or cls.__name:match(filter) then
+      has_jest_tests = true
+      break
+    end
+  end
+  
+  if has_jest_tests then
+    jest_logger = test_logger.JestLogger()
+    jest_logger.prelude()
+  end
+  
   for _, cls in ipairs(jest_style.jest_test_suites) do
     if not filter or cls.__name:match(filter) then
       local test_object = cls(cls.__name, cls.__jest_tests)
-      local failed_tests, tests_ran = test_object:run_tests(logger)
+      local failed_tests, tests_ran = test_object:run_tests(jest_logger)
       total_failure_count = total_failure_count + failed_tests
       total_test_count = total_test_count + tests_ran
     end
   end
   
-  logger.finale(total_failure_count, total_test_count)
+  -- Use JestLogger finale if we have jest tests, otherwise use the default logger
+  if has_jest_tests and jest_logger then
+    jest_logger.finale(total_failure_count, total_test_count)
+  else
+    logger.finale(total_failure_count, total_test_count)
+  end
 end
 
 return {

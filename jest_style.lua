@@ -296,7 +296,7 @@ end
 -- @param[opt] logger An optional logger object to capture output
 local function run_jest_tests(filter, logger)
   local test_logger = require 'unit.test_logger'
-  logger = logger or test_logger.TestLogger()
+  logger = logger or test_logger.JestLogger()
   local total_failure_count = 0
   local total_test_count = 0
 
