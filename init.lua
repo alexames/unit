@@ -83,6 +83,7 @@ local test_env = {
   beforeEach = jest_style.beforeEach,
   afterEach = jest_style.afterEach,
   run_jest_tests = jest_style.run_jest_tests,
+  jestMatchers = jest_style.jestMatchers,
 }
 
 local function create_test_env(fallback_env)

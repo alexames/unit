@@ -17,6 +17,12 @@ local describe_context_stack = {}
 -- Global test suites registered via describe
 local jest_test_suites = llx.Table{}
 
+--- Public table for registering jest-style matchers.
+-- Users can add their own matchers by assigning to this table.
+-- Matchers should be functions that take arguments and return a matcher function.
+-- For example: jestMatchers.beEqualTo = matchers.Equals
+local jestMatchers = {}
+
 --- Creates an expect object with matcher methods
 -- @param actual The actual value to test
 -- @return An object with to and toNot properties
@@ -25,215 +31,111 @@ local function expect(actual)
     _actual = actual,
   }
 
-  -- Helper to create a matcher method that applies a matcher function
-  local function create_matcher_method(matcher_creator, ...)
+  -- Helper to create a matcher method from a jestMatcher entry
+  local function create_matcher_method(matcher_creator, negated)
+    if type(matcher_creator) ~= 'function' then
+      return nil
+    end
+    
     return function(...)
       local matcher = matcher_creator(...)
+      if negated then
+        matcher = matchers.Not(matcher)
+      end
       expects.EXPECT_THAT(expect_obj._actual, matcher, 3)
     end
   end
 
-  -- Helper to create a negated matcher method
-  local function create_negated_matcher_method(matcher_creator, ...)
-    return function(...)
-      local matcher = matcher_creator(...)
-      expects.EXPECT_THAT(expect_obj._actual, matchers.Not(matcher), 3)
-    end
-  end
-
-  -- Create matcher methods for 'to'
-  local to_methods = {}
-
-  -- Basic equality
-  to_methods.beEqualTo = create_matcher_method(matchers.Equals)
-
-  -- Comparison matchers
-  to_methods.beGreaterThan = create_matcher_method(matchers.GreaterThan)
-  to_methods.beGreaterThanOrEqual = create_matcher_method(matchers.GreaterThanOrEqual)
-  to_methods.beLessThan = create_matcher_method(matchers.LessThan)
-  to_methods.beLessThanOrEqual = create_matcher_method(matchers.LessThanOrEqual)
-
-  -- String matchers
-  to_methods.contain = create_matcher_method(matchers.Contains)
-  to_methods.matchPattern = create_matcher_method(matchers.Matches)
-  to_methods.startWith = create_matcher_method(matchers.StartsWith)
-  to_methods.endWith = create_matcher_method(matchers.EndsWith)
-  to_methods.haveLength = create_matcher_method(matchers.HasLength)
-
-  -- Collection matchers
-  to_methods.beEmpty = function()
-    expects.EXPECT_THAT(expect_obj._actual, matchers.IsEmpty(), 3)
-  end
-  to_methods.haveSize = create_matcher_method(matchers.HasSize)
-  to_methods.containElement = create_matcher_method(matchers.ContainsElement)
-
-  -- Type and value matchers
-  to_methods.beNil = function()
-    expects.EXPECT_THAT(expect_obj._actual, matchers.Equals(nil), 3)
-  end
-  to_methods.beTruthy = function()
-    local matcher = function(actual)
-      return truthy(actual),
-             tostring(actual),
-             'be truthy',
-             'be not truthy',
-             'truthy value'
-    end
-    expects.EXPECT_THAT(expect_obj._actual, matcher, 3)
-  end
-  to_methods.beFalsy = function()
-    local matcher = function(actual)
-      return falsey(actual),
-             tostring(actual),
-             'be falsy',
-             'be not falsy',
-             'falsy value'
-    end
-    expects.EXPECT_THAT(expect_obj._actual, matcher, 3)
-  end
-
-  -- Numeric matchers
-  to_methods.beNear = create_matcher_method(matchers.Near)
-  to_methods.bePositive = function()
-    expects.EXPECT_THAT(expect_obj._actual, matchers.IsPositive(), 3)
-  end
-  to_methods.beNegative = function()
-    expects.EXPECT_THAT(expect_obj._actual, matchers.IsNegative(), 3)
-  end
-  to_methods.beBetween = create_matcher_method(matchers.IsBetween)
-  to_methods.beNaN = function()
-    expects.EXPECT_THAT(expect_obj._actual, matchers.IsNaN(), 3)
-  end
-
-  -- Type checking
-  to_methods.beOfType = create_matcher_method(matchers.IsOfType)
-
-  -- Error matcher
-  to_methods.throw = function(expected)
-    local level = 3
-    if type(expect_obj._actual) ~= 'function' then
-      error('throw() expects a function, got ' .. type(expect_obj._actual), level)
-    end
-    
-    local successful, exception = pcall(expect_obj._actual)
-    
-    -- Expect function to throw
-    if expected then
-      if type(expected) == 'string' and type(exception) == 'string' then
-        local path_colon = exception:find(':', 1, true)
-        local line_colon = exception:find(':', path_colon + 1, true)
-        if line_colon then
-          expects.EXPECT_EQ(exception:sub(line_colon + 2), expected, level + 1)
-        else
-          expects.EXPECT_EQ(exception, expected, level + 1)
-        end
-      else
-        expects.EXPECT_EQ(exception, expected, level + 1)
-      end
-    end
-    if successful then
-      error('expected function to raise error', level)
-    end
-  end
-
-  -- Composite matchers
-  to_methods.satisfy = function(...)
-    expects.EXPECT_THAT(expect_obj._actual, matchers.AllOf(...), 3)
-  end
-  to_methods.satisfyAny = function(...)
-    expects.EXPECT_THAT(expect_obj._actual, matchers.AnyOf(...), 3)
-  end
-
-  -- Custom matcher support - allows passing any matcher function
-  to_methods.match = function(matcher_func)
-    expects.EXPECT_THAT(expect_obj._actual, matcher_func, 3)
-  end
-
-  -- Create toNot methods (negated versions)
-  local toNot_methods = {}
-
-  toNot_methods.beEqualTo = create_negated_matcher_method(matchers.Equals)
-  toNot_methods.beGreaterThan = create_negated_matcher_method(matchers.GreaterThan)
-  toNot_methods.beGreaterThanOrEqual = create_negated_matcher_method(matchers.GreaterThanOrEqual)
-  toNot_methods.beLessThan = create_negated_matcher_method(matchers.LessThan)
-  toNot_methods.beLessThanOrEqual = create_negated_matcher_method(matchers.LessThanOrEqual)
-  toNot_methods.contain = create_negated_matcher_method(matchers.Contains)
-  toNot_methods.matchPattern = create_negated_matcher_method(matchers.Matches)
-  toNot_methods.startWith = create_negated_matcher_method(matchers.StartsWith)
-  toNot_methods.endWith = create_negated_matcher_method(matchers.EndsWith)
-  toNot_methods.haveLength = create_negated_matcher_method(matchers.HasLength)
-  toNot_methods.beEmpty = function()
-    expects.EXPECT_THAT(expect_obj._actual, matchers.Not(matchers.IsEmpty()), 3)
-  end
-  toNot_methods.haveSize = create_negated_matcher_method(matchers.HasSize)
-  toNot_methods.containElement = create_negated_matcher_method(matchers.ContainsElement)
-  toNot_methods.beNil = function()
-    expects.EXPECT_THAT(expect_obj._actual, matchers.Not(matchers.Equals(nil)), 3)
-  end
-  toNot_methods.beTruthy = function()
-    local matcher = function(actual)
-      return truthy(actual),
-             tostring(actual),
-             'be truthy',
-             'be not truthy',
-             'truthy value'
-    end
-    expects.EXPECT_THAT(expect_obj._actual, matchers.Not(matcher), 3)
-  end
-  toNot_methods.beFalsy = function()
-    local matcher = function(actual)
-      return falsey(actual),
-             tostring(actual),
-             'be falsy',
-             'be not falsy',
-             'falsy value'
-    end
-    expects.EXPECT_THAT(expect_obj._actual, matchers.Not(matcher), 3)
-  end
-  toNot_methods.beNear = create_negated_matcher_method(matchers.Near)
-  toNot_methods.bePositive = function()
-    expects.EXPECT_THAT(expect_obj._actual, matchers.Not(matchers.IsPositive()), 3)
-  end
-  toNot_methods.beNegative = function()
-    expects.EXPECT_THAT(expect_obj._actual, matchers.Not(matchers.IsNegative()), 3)
-  end
-  toNot_methods.beBetween = create_negated_matcher_method(matchers.IsBetween)
-  toNot_methods.beNaN = function()
-    expects.EXPECT_THAT(expect_obj._actual, matchers.Not(matchers.IsNaN()), 3)
-  end
-  toNot_methods.beOfType = create_negated_matcher_method(matchers.IsOfType)
-  toNot_methods.throw = function(expected)
-    local level = 3
-    if type(expect_obj._actual) ~= 'function' then
-      error('throw() expects a function, got ' .. type(expect_obj._actual), level)
-    end
-    local successful, exception = pcall(expect_obj._actual)
-    if not successful then
-      error('expected function not to raise error, but got: ' .. tostring(exception), level)
-    end
-  end
-  toNot_methods.satisfy = function(...)
-    expects.EXPECT_THAT(expect_obj._actual, matchers.Not(matchers.AllOf(...)), 3)
-  end
-  toNot_methods.satisfyAny = function(...)
-    expects.EXPECT_THAT(expect_obj._actual, matchers.Not(matchers.AnyOf(...)), 3)
-  end
-  toNot_methods.match = function(matcher_func)
-    expects.EXPECT_THAT(expect_obj._actual, matchers.Not(matcher_func), 3)
-  end
-
-  -- Create proxies
+  -- Create proxies that dynamically look up matchers from jestMatchers
   local to_proxy = {}
   setmetatable(to_proxy, {
     __index = function(_, key)
-      return to_methods[key]
+      -- Handle special matchers
+      if key == 'throw' then
+        return function(expected)
+          local level = 3
+          if type(expect_obj._actual) ~= 'function' then
+            error('throw() expects a function, got ' .. type(expect_obj._actual), level)
+          end
+          
+          local successful, exception = pcall(expect_obj._actual)
+          
+          -- Expect function to throw
+          if expected then
+            if type(expected) == 'string' and type(exception) == 'string' then
+              local path_colon = exception:find(':', 1, true)
+              local line_colon = exception:find(':', path_colon + 1, true)
+              if line_colon then
+                expects.EXPECT_EQ(exception:sub(line_colon + 2), expected, level + 1)
+              else
+                expects.EXPECT_EQ(exception, expected, level + 1)
+              end
+            else
+              expects.EXPECT_EQ(exception, expected, level + 1)
+            end
+          end
+          if successful then
+            error('expected function to raise error', level)
+          end
+        end
+      elseif key == 'match' then
+        return function(matcher_func)
+          expects.EXPECT_THAT(expect_obj._actual, matcher_func, 3)
+        end
+      elseif key == 'satisfy' then
+        return function(...)
+          expects.EXPECT_THAT(expect_obj._actual, matchers.AllOf(...), 3)
+        end
+      elseif key == 'satisfyAny' then
+        return function(...)
+          expects.EXPECT_THAT(expect_obj._actual, matchers.AnyOf(...), 3)
+        end
+      else
+        -- Look up in jestMatchers
+        local matcher_creator = jestMatchers[key]
+        if matcher_creator then
+          return create_matcher_method(matcher_creator, false)
+        end
+      end
+      return nil
     end
   })
 
   local toNot_proxy = {}
   setmetatable(toNot_proxy, {
     __index = function(_, key)
-      return toNot_methods[key]
+      -- Handle special matchers
+      if key == 'throw' then
+        return function(expected)
+          local level = 3
+          if type(expect_obj._actual) ~= 'function' then
+            error('throw() expects a function, got ' .. type(expect_obj._actual), level)
+          end
+          local successful, exception = pcall(expect_obj._actual)
+          if not successful then
+            error('expected function not to raise error, but got: ' .. tostring(exception), level)
+          end
+        end
+      elseif key == 'match' then
+        return function(matcher_func)
+          expects.EXPECT_THAT(expect_obj._actual, matchers.Not(matcher_func), 3)
+        end
+      elseif key == 'satisfy' then
+        return function(...)
+          expects.EXPECT_THAT(expect_obj._actual, matchers.Not(matchers.AllOf(...)), 3)
+        end
+      elseif key == 'satisfyAny' then
+        return function(...)
+          expects.EXPECT_THAT(expect_obj._actual, matchers.Not(matchers.AnyOf(...)), 3)
+        end
+      else
+        -- Look up in jestMatchers
+        local matcher_creator = jestMatchers[key]
+        if matcher_creator then
+          return create_matcher_method(matcher_creator, true)
+        end
+      end
+      return nil
     end
   })
 
@@ -242,6 +144,48 @@ local function expect(actual)
 
   return expect_obj
 end
+
+-- Register all built-in matchers
+jestMatchers.beEqualTo = matchers.Equals
+jestMatchers.beGreaterThan = matchers.GreaterThan
+jestMatchers.beGreaterThanOrEqual = matchers.GreaterThanOrEqual
+jestMatchers.beLessThan = matchers.LessThan
+jestMatchers.beLessThanOrEqual = matchers.LessThanOrEqual
+jestMatchers.contain = matchers.Contains
+jestMatchers.matchPattern = matchers.Matches
+jestMatchers.startWith = matchers.StartsWith
+jestMatchers.endWith = matchers.EndsWith
+jestMatchers.haveLength = matchers.HasLength
+jestMatchers.beEmpty = function() return matchers.IsEmpty() end
+jestMatchers.haveSize = matchers.HasSize
+jestMatchers.containElement = matchers.ContainsElement
+jestMatchers.beNil = function() return matchers.Equals(nil) end
+jestMatchers.beTruthy = function()
+  return function(actual)
+    return truthy(actual),
+           tostring(actual),
+           'be truthy',
+           'be not truthy',
+           'truthy value'
+  end
+end
+jestMatchers.beFalsy = function()
+  return function(actual)
+    return falsey(actual),
+           tostring(actual),
+           'be falsy',
+           'be not falsy',
+           'falsy value'
+  end
+end
+jestMatchers.beNear = matchers.Near
+jestMatchers.bePositive = function() return matchers.IsPositive() end
+jestMatchers.beNegative = function() return matchers.IsNegative() end
+jestMatchers.beBetween = matchers.IsBetween
+jestMatchers.beNaN = function() return matchers.IsNaN() end
+jestMatchers.beOfType = matchers.IsOfType
+-- Special matchers that need custom handling (not registered in jestMatchers)
+-- These are handled directly in the proxy __index functions
 
 --- Test class for Jest-style tests
 local JestTestSuite = class 'JestTestSuite':extends(test.Test) {
@@ -378,5 +322,6 @@ return {
   afterEach = afterEach,
   run_jest_tests = run_jest_tests,
   jest_test_suites = jest_test_suites,
+  jestMatchers = jestMatchers,
 }
 
