@@ -127,6 +127,23 @@ local function build_test_tree(tests, suite_path)
   return tree
 end
 
+--- Checks if a tree node has any failing descendants
+-- @param item Tree item (describe block or test)
+-- @return true if item or any descendant has failed
+local function has_failing_descendant(item)
+  if item.type == 'test' then
+    return not item.data.passed
+  elseif item.type == 'describe' then
+    for _, child in ipairs(item.children) do
+      if has_failing_descendant(child) then
+        return true
+      end
+    end
+    return false
+  end
+  return false
+end
+
 --- Recursively prints a tree node
 -- @param items List of tree items (describe blocks or tests)
 -- @param indent Current indentation level
@@ -134,7 +151,11 @@ local function print_tree(items, indent)
   for _, item in ipairs(items) do
     local indent_str = string.rep('  ', indent)
     if item.type == 'describe' then
-      printf('%s%s+%s %s%s', indent_str, color(green), reset(), item.name, reset())
+      -- Check if this describe block has any failing descendants
+      local has_failures = has_failing_descendant(item)
+      local describe_color = has_failures and red or green
+      local describe_symbol = has_failures and '-' or '+'
+      printf('%s%s%s%s %s%s', indent_str, color(describe_color), describe_symbol, reset(), item.name, reset())
       print_tree(item.children, indent + 1)
     elseif item.type == 'test' then
       local test = item.data

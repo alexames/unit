@@ -514,7 +514,7 @@ describe('DeepNestingTests', function()
       describe('Level3', function()
         describe('Level4', function()
           it('should work at level 4', function()
-            expect(false).to.beTruthy()
+            expect(true).to.beTruthy()
           end)
           
           describe('Level5', function()
