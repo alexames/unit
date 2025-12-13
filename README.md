@@ -70,18 +70,121 @@ unit.run_unit_tests()
 
 ## Mocks
 
-```lua
-local mock <close> = Mock()
-mock:call_count(Equals(2)):call_spec{
-  CallSpec{return_values = {"hello"}},
-  CallSpec{expected_args = {Equals(42)}, return_values = {"world"}},
-}
+Mocks provide flexible call tracking and behavior control, similar to Jest's `jest.fn()`.
 
-print(mock())       -- prints: hello
-print(mock(42))     -- prints: world
+### Basic Usage
+
+```lua
+local mock = Mock()
+mock:mockReturnValue(42)
+local result = mock('hello', 'world')
+expect(mock).to.toHaveBeenCalledTimes(1)
+expect(mock).to.toHaveBeenCalledWith('hello', 'world')
 ```
 
-When the mock is closed (`<close>`), it automatically verifies the call count.
+### Return Values
+
+```lua
+local mock = Mock()
+
+-- Set default return value for all calls
+mock:mockReturnValue(100)
+expect(mock()).to.beEqualTo(100)
+expect(mock()).to.beEqualTo(100)
+
+-- Set return value for next call only
+mock:mockReturnValueOnce(1):mockReturnValueOnce(2)
+expect(mock()).to.beEqualTo(1)
+expect(mock()).to.beEqualTo(2)
+expect(mock()).to.beEqualTo(100) -- Falls back to default
+```
+
+### Custom Implementations
+
+```lua
+local mock = Mock()
+
+-- Set default implementation
+mock:mockImplementation(function(x, y)
+  return x + y
+end)
+expect(mock(2, 3)).to.beEqualTo(5)
+
+-- Set implementation for next call only
+mock:mockImplementationOnce(function(x) return x * 2 end)
+expect(mock(5)).to.beEqualTo(10)
+expect(mock(5)).to.beEqualTo(5) -- Falls back to default
+```
+
+### Call History
+
+```lua
+local mock = Mock()
+mock('first', 1)
+mock('second', 2)
+
+expect(mock:get_call_count()).to.beEqualTo(2)
+expect(mock:get_last_call().args[1]).to.beEqualTo('second')
+expect(mock:get_call(1).args[1]).to.beEqualTo('first')
+```
+
+### Jest-style Matchers
+
+```lua
+local mock = Mock()
+mock('hello', 'world')
+
+expect(mock).to.toHaveBeenCalled()
+expect(mock).to.toHaveBeenCalledTimes(1)
+expect(mock).to.toHaveBeenCalledWith('hello', 'world')
+expect(mock).to.toHaveBeenLastCalledWith('hello', 'world')
+expect(mock).to.toHaveBeenNthCalledWith(1, 'hello', 'world')
+
+-- With matchers
+expect(mock).to.toHaveBeenCalledWith(StartsWith('hello'), Equals('world'))
+```
+
+### Spies
+
+```lua
+local obj = {
+  method = function(x, y)
+    return x + y
+  end
+}
+
+local spy = spyOn(obj, 'method')
+local result = obj.method(2, 3)
+
+expect(result).to.beEqualTo(5) -- Original still works
+expect(spy).to.toHaveBeenCalledTimes(1)
+
+-- Override behavior
+spy:mockReturnValue(999)
+expect(obj.method(1, 1)).to.beEqualTo(999)
+
+-- Restore original
+spy:mockRestore()
+expect(obj.method(2, 3)).to.beEqualTo(5)
+```
+
+### State Management
+
+```lua
+local mock = Mock()
+mock:mockReturnValue(42)
+mock()
+mock()
+
+-- Clear call history but keep implementation
+mock:mockClear()
+expect(mock:get_call_count()).to.beEqualTo(0)
+expect(mock()).to.beEqualTo(42) -- Still works
+
+-- Reset everything
+mock:mockReset()
+expect(mock()).to.beNil() -- Everything reset
+```
 
 ---
 

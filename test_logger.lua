@@ -76,6 +76,91 @@ TestLogger = class 'TestLogger' {
 -- Module-level variable to store the current JestLogger instance
 local current_jest_logger = nil
 
+--- Builds a hierarchical tree structure from test name paths
+-- @param tests List of tests with name_path arrays
+-- @param suite_path The path of the current suite
+-- @return Tree structure with describe blocks and tests
+local function build_test_tree(tests, suite_path)
+  local tree = {}
+  local suite_path_len = #suite_path
+  
+  for _, test in ipairs(tests) do
+    if not test.name_path then
+      -- Fallback for tests without name_path
+      table.insert(tree, {type = 'test', data = test})
+    else
+      -- Find where this test belongs in the tree
+      local current = tree
+      local test_path = test.name_path
+      
+      -- Navigate/create the path for nested describe blocks
+      for i = suite_path_len + 1, #test_path - 1 do
+        local segment = test_path[i]
+        local found = false
+        
+        -- Look for existing describe block at this level
+        for _, item in ipairs(current) do
+          if item.type == 'describe' and item.name == segment then
+            current = item.children
+            found = true
+            break
+          end
+        end
+        
+        -- Create new describe block if not found
+        if not found then
+          local new_describe = {
+            type = 'describe',
+            name = segment,
+            children = {}
+          }
+          table.insert(current, new_describe)
+          current = new_describe.children
+        end
+      end
+      
+      -- Add the test at the appropriate level
+      table.insert(current, {type = 'test', data = test})
+    end
+  end
+  
+  return tree
+end
+
+--- Recursively prints a tree node
+-- @param items List of tree items (describe blocks or tests)
+-- @param indent Current indentation level
+local function print_tree(items, indent)
+  for _, item in ipairs(items) do
+    local indent_str = string.rep('  ', indent)
+    if item.type == 'describe' then
+      printf('%s%s+%s %s%s', indent_str, color(green), reset(), item.name, reset())
+      print_tree(item.children, indent + 1)
+    elseif item.type == 'test' then
+      local test = item.data
+      if test.passed then
+        printf('%s%s+%s %s%s', indent_str, color(green), reset(), test.name, reset())
+      else
+        printf('%s%s-%s %s%s', indent_str, color(red), reset(), test.name, reset())
+        -- Print error details
+        if test.error then
+          local error_lines = {}
+          for line in test.error:gmatch('[^\r\n]+') do
+            table.insert(error_lines, line)
+          end
+          -- Print first few lines of error, indented
+          for i = 1, math.min(5, #error_lines) do
+            printf('%s  %s', indent_str, error_lines[i])
+          end
+          if #error_lines > 5 then
+            printf('%s  ... (%d more lines)', indent_str, #error_lines - 5)
+          end
+        end
+      end
+    end
+  end
+end
+
 --- Jest-style logger for displaying test results.
 JestLogger = class 'JestLogger' {
   __init = function(self)
@@ -96,9 +181,18 @@ JestLogger = class 'JestLogger' {
     if not current_jest_logger then
       error('JestLogger instance not found')
     end
+    -- Get nested suites if available
+    local nested_suites = {}
+    if test_suite._nested_suites then
+      for _, nested in ipairs(test_suite._nested_suites) do
+        table.insert(nested_suites, nested)
+      end
+    end
     current_jest_logger.current_suite = {
       name = test_suite:name(),
+      name_path = test_suite._name_path or {test_suite:name()},
       tests = {},
+      nested_suites = nested_suites,
       passed = 0,
       failed = 0,
     }
@@ -115,9 +209,10 @@ JestLogger = class 'JestLogger' {
     if not current_jest_logger then
       error('JestLogger instance not found')
     end
-    local test_name_str = table.concat(test_name, ' ')
+    -- test_name is already a path array, store it as-is
     local test_info = {
-      name = test_name_str,
+      name_path = test_name,
+      name = test_name[#test_name], -- Just the last element (local name)
       passed = successful,
       error = err,
     }
@@ -146,35 +241,21 @@ JestLogger = class 'JestLogger' {
       error('JestLogger instance not found')
     end
     
-    -- Print each test suite
+    -- Print each test suite hierarchically
     for _, suite in ipairs(current_jest_logger.test_suites) do
-      local suite_status = suite.failed > 0 and 'FAIL' or 'PASS'
+      -- Get the suite's base name (last element of name_path)
+      local suite_name = suite.name_path[#suite.name_path]
       local suite_color = suite.failed > 0 and red or green
+      local suite_symbol = suite.failed > 0 and '-' or '+'
       
-      printf('%s%s%s  %s%s', color(suite_color), suite_status, reset(), suite.name, reset())
+      -- Print suite header
+      printf('%s%s%s %s%s', color(suite_color), suite_symbol, reset(), suite_name, reset())
       
-      -- Print each test in the suite
-      for _, test in ipairs(suite.tests) do
-        if test.passed then
-          printf('  %s+%s %s', color(green), reset(), test.name)
-        else
-          printf('  %s-%s %s', color(red), reset(), test.name)
-          -- Print error details
-          if test.error then
-            local error_lines = {}
-            for line in test.error:gmatch('[^\r\n]+') do
-              table.insert(error_lines, line)
-            end
-            -- Print first few lines of error, indented
-            for i = 1, math.min(5, #error_lines) do
-              printf('    %s', error_lines[i])
-            end
-            if #error_lines > 5 then
-              printf('    ... (%d more lines)', #error_lines - 5)
-            end
-          end
-        end
-      end
+      -- Build tree from tests
+      local tree = build_test_tree(suite.tests, suite.name_path)
+      
+      -- Print the tree
+      print_tree(tree, 1)
       print()
     end
     

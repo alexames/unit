@@ -69,7 +69,12 @@ local function run_unit_tests(filter, logger)
   
   for _, cls in ipairs(jest_style.jest_test_suites) do
     if not filter or cls.__name:match(filter) then
-      local test_object = cls(cls.__name, cls.__jest_tests)
+      local test_object = cls(
+        cls.__name,
+        cls.__jest_tests,
+        cls.__jest_nested_suites or {},
+        cls.__jest_name_path or {cls.__name}
+      )
       local failed_tests, tests_ran = test_object:run_tests(jest_logger)
       total_failure_count = total_failure_count + failed_tests
       total_test_count = total_test_count + tests_ran

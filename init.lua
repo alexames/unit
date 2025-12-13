@@ -69,6 +69,7 @@ local test_env = {
 
   -- Mocks
   Mock = mock.Mock,
+  spyOn = mock.spyOn,
 
   -- Test registration and execution
   run_unit_tests = runner.run_unit_tests,
