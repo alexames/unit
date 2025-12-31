@@ -212,21 +212,11 @@ local function match_args(actual_args, expected_args)
     -- If expected is a matcher function, use it
     if type(expected) == 'function' then
       local result = expected(actual)
-      if type(result) == 'boolean' then
-        if not result then
-          return false
-        end
-      elseif type(result) == 'table' and result.pass ~= nil then
-        -- New table format
-        if not result.pass then
-          return false
-        end
-      else
-        -- Legacy format: 5 return values (result, act, msg, nmsg, exp)
-        local ok = result
-        if not ok then
-          return false
-        end
+      if type(result) ~= 'table' or result.pass == nil then
+        error('Matcher must return a table with pass, actual, positive_message, negative_message, and expected fields', 2)
+      end
+      if not result.pass then
+        return false
       end
     -- Otherwise do direct equality check
     elseif actual ~= expected then

@@ -27,26 +27,16 @@ end
 function Not(predicate)
   return function(actual)
     local result = predicate(actual)
-    -- Handle both old format (5 return values) and new format (table)
-    if type(result) == 'table' and result.pass ~= nil then
-      return {
-        pass = not result.pass,
-        actual = result.actual,
-        positive_message = result.negative_message,
-        negative_message = result.positive_message,
-        expected = result.expected
-      }
-    else
-      -- Legacy support: if it returns 5 values, convert to table
-      local pass, act, msg, nmsg, exp = result
-      return {
-        pass = not pass,
-        actual = act,
-        positive_message = nmsg,
-        negative_message = msg,
-        expected = exp
-      }
+    if type(result) ~= 'table' or result.pass == nil then
+      error('Matcher must return a table with pass, actual, positive_message, negative_message, and expected fields', 2)
     end
+    return {
+      pass = not result.pass,
+      actual = result.actual,
+      positive_message = result.negative_message,
+      negative_message = result.positive_message,
+      expected = result.expected
+    }
   end
 end
 
@@ -166,16 +156,13 @@ function Listwise(predicate_generator, expected)
     for i=1, largest_len do
       local predicate = predicate_generator(expected[i])
       local local_result = predicate(actual[i])
-      -- Handle both table and legacy format
-      local pass, act, exp
-      if type(local_result) == 'table' and local_result.pass ~= nil then
-        pass = local_result.pass
-        act = local_result.actual
-        exp = local_result.expected
-        msg = local_result.positive_message
-      else
-        pass, act, msg, _, exp = local_result
+      if type(local_result) ~= 'table' or local_result.pass == nil then
+        error('Matcher must return a table with pass, actual, positive_message, negative_message, and expected fields', 2)
       end
+      local pass = local_result.pass
+      local act = local_result.actual
+      local exp = local_result.expected
+      msg = local_result.positive_message
       act_list[i], exp_list[i] = act, exp
       result = result and pass
     end
@@ -210,14 +197,11 @@ function Tablewise(predicate_generator, expected)
     for k in pairs(keys) do
       local predicate = predicate_generator(expected[k])
       local local_result = predicate(actual[k])
-      -- Handle both table and legacy format
-      local pass
-      if type(local_result) == 'table' and local_result.pass ~= nil then
-        pass = local_result.pass
-        msg = local_result.positive_message
-      else
-        pass, _, msg = local_result
+      if type(local_result) ~= 'table' or local_result.pass == nil then
+        error('Matcher must return a table with pass, actual, positive_message, negative_message, and expected fields', 2)
       end
+      local pass = local_result.pass
+      msg = local_result.positive_message
       result = result and pass
     end
     return {
@@ -405,14 +389,10 @@ function AllOf(...)
   return function(actual)
     for _, matcher in ipairs(matchers) do
       local result = matcher(actual)
-      -- Handle both table and legacy format
-      local pass
-      if type(result) == 'table' and result.pass ~= nil then
-        pass = result.pass
-      else
-        pass = result
+      if type(result) ~= 'table' or result.pass == nil then
+        error('Matcher must return a table with pass, actual, positive_message, negative_message, and expected fields', 2)
       end
-      if not pass then
+      if not result.pass then
         return {
           pass = false,
           actual = tostring(actual),
@@ -438,14 +418,10 @@ function AnyOf(...)
   return function(actual)
     for _, matcher in ipairs(matchers) do
       local result = matcher(actual)
-      -- Handle both table and legacy format
-      local pass
-      if type(result) == 'table' and result.pass ~= nil then
-        pass = result.pass
-      else
-        pass = result
+      if type(result) ~= 'table' or result.pass == nil then
+        error('Matcher must return a table with pass, actual, positive_message, negative_message, and expected fields', 2)
       end
-      if pass then
+      if result.pass then
         return {
           pass = true,
           actual = tostring(actual),

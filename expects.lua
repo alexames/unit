@@ -17,19 +17,11 @@ local truthy, falsey = require 'llx.truthy' {'truthy', 'falsey'}
 function EXPECT_THAT(actual, predicate, level, s)
   level = level or 2
   local result = predicate(actual, false)
-  -- Handle both new table format and legacy 5-value format
-  local pass, act, msg, exp
-  if type(result) == 'table' and result.pass ~= nil then
-    pass = result.pass
-    act = result.actual
-    msg = result.positive_message
-    exp = result.expected
-  else
-    -- Legacy format: 5 return values
-    pass, act, msg, _, exp = result
+  if type(result) ~= 'table' or result.pass == nil then
+    error('Matcher must return a table with pass, actual, positive_message, negative_message, and expected fields', level)
   end
-  if not pass then
-    error(('expected %s\n  %s\nto %s\n  %s'):format(s or '', act, msg, exp), level)
+  if not result.pass then
+    error(('expected %s\n  %s\nto %s\n  %s'):format(s or '', result.actual, result.positive_message, result.expected), level)
   end
 end
 
