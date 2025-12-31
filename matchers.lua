@@ -26,96 +26,131 @@ end
 -- @return A new matcher predicate
 function Not(predicate)
   return function(actual)
-    local result, act, msg, nmsg, exp = predicate(actual)
-    return not result, act, nmsg, msg, exp
+    local result = predicate(actual)
+    -- Handle both old format (5 return values) and new format (table)
+    if type(result) == 'table' and result.pass ~= nil then
+      return {
+        pass = not result.pass,
+        actual = result.actual,
+        positive_message = result.negative_message,
+        negative_message = result.positive_message,
+        expected = result.expected
+      }
+    else
+      -- Legacy support: if it returns 5 values, convert to table
+      local pass, act, msg, nmsg, exp = result
+      return {
+        pass = not pass,
+        actual = act,
+        positive_message = nmsg,
+        negative_message = msg,
+        expected = exp
+      }
+    end
   end
 end
 
 --- Checks equality with expected value.
 function Equals(expected)
   return function(actual)
-    return actual == expected,
-           tostring(actual),
-           'be equal to',
-           'be not equal to',
-           tostring(expected)
+    return {
+      pass = actual == expected,
+      actual = tostring(actual),
+      positive_message = 'be equal to',
+      negative_message = 'be not equal to',
+      expected = tostring(expected)
+    }
   end
 end
 
 --- Checks if actual > expected
 function GreaterThan(expected)
   return function(actual)
-    return actual > expected,
-           tostring(actual),
-           'be greater than',
-           'be not greater than',
-           tostring(expected)
+    return {
+      pass = actual > expected,
+      actual = tostring(actual),
+      positive_message = 'be greater than',
+      negative_message = 'be not greater than',
+      expected = tostring(expected)
+    }
   end
 end
 
 --- Checks if actual >= expected
 function GreaterThanOrEqual(expected)
   return function(actual)
-    return actual >= expected,
-           tostring(actual),
-           'be greater than or equal to',
-           'be not greater than or equal to',
-           tostring(expected)
+    return {
+      pass = actual >= expected,
+      actual = tostring(actual),
+      positive_message = 'be greater than or equal to',
+      negative_message = 'be not greater than or equal to',
+      expected = tostring(expected)
+    }
   end
 end
 
 --- Checks if actual < expected
 function LessThan(expected)
   return function(actual)
-    return actual < expected,
-           tostring(actual),
-           'be less than',
-           'be not less than',
-           tostring(expected)
+    return {
+      pass = actual < expected,
+      actual = tostring(actual),
+      positive_message = 'be less than',
+      negative_message = 'be not less than',
+      expected = tostring(expected)
+    }
   end
 end
 
 --- Checks if actual <= expected
 function LessThanOrEqual(expected)
   return function(actual)
-    return actual <= expected,
-           tostring(actual),
-           'be less than or equal to',
-           'be not less than or equal to',
-           tostring(expected)
+    return {
+      pass = actual <= expected,
+      actual = tostring(actual),
+      positive_message = 'be less than or equal to',
+      negative_message = 'be not less than or equal to',
+      expected = tostring(expected)
+    }
   end
 end
 
 --- Checks if actual string starts with expected prefix.
 function StartsWith(expected)
   return function(actual)
-    return actual:startswith(expected),
-           tostring(actual),
-           'start with',
-           'not start with',
-           tostring(expected)
+    return {
+      pass = actual:startswith(expected),
+      actual = tostring(actual),
+      positive_message = 'start with',
+      negative_message = 'not start with',
+      expected = tostring(expected)
+    }
   end
 end
 
 --- Checks if actual string ends with expected suffix.
 function EndsWith(expected)
   return function(actual)
-    return actual:endswith(expected),
-           tostring(actual),
-           'end with',
-           'not end with',
-           tostring(expected)
+    return {
+      pass = actual:endswith(expected),
+      actual = tostring(actual),
+      positive_message = 'end with',
+      negative_message = 'not end with',
+      expected = tostring(expected)
+    }
   end
 end
 
 --- Checks if actual is of expected type/class.
 function IsOfType(expected)
   return function(actual)
-    return isinstance(actual, expected),
-           tostring(actual),
-           'be of type',
-           'not be of type',
-           tostring(expected)
+    return {
+      pass = isinstance(actual, expected),
+      actual = tostring(actual),
+      positive_message = 'be of type',
+      negative_message = 'not be of type',
+      expected = tostring(expected)
+    }
   end
 end
 
@@ -125,21 +160,32 @@ end
 function Listwise(predicate_generator, expected)
   return function(actual)
     local result = true
-    local act, msg, nmsg, exp
+    local msg
     local act_list, exp_list = {}, {}
     local largest_len = math.max(#actual, #expected)
     for i=1, largest_len do
       local predicate = predicate_generator(expected[i])
-      local local_result
-      local_result, act, msg, nmsg, exp = predicate(actual[i])
+      local local_result = predicate(actual[i])
+      -- Handle both table and legacy format
+      local pass, act, exp
+      if type(local_result) == 'table' and local_result.pass ~= nil then
+        pass = local_result.pass
+        act = local_result.actual
+        exp = local_result.expected
+        msg = local_result.positive_message
+      else
+        pass, act, msg, _, exp = local_result
+      end
       act_list[i], exp_list[i] = act, exp
-      result = result and local_result
+      result = result and pass
     end
-    return result,
-           '{' .. (','):join(act_list) .. '}',
-           msg .. ' the value at every index of',
-           'not to ' .. msg .. ' the value at every index of',
-           '{' .. (','):join(exp_list) .. '}'
+    return {
+      pass = result,
+      actual = '{' .. (','):join(act_list) .. '}',
+      positive_message = msg .. ' the value at every index of',
+      negative_message = 'not to ' .. msg .. ' the value at every index of',
+      expected = '{' .. (','):join(exp_list) .. '}'
+    }
   end
 end
 
@@ -159,20 +205,28 @@ end
 function Tablewise(predicate_generator, expected)
   return function(actual)
     local result = true
-    local act, msg, nmsg, exp
-    local act_list, exp_list = {}, {}
+    local msg
     local keys = collect_keys({}, actual, expected)
     for k in pairs(keys) do
       local predicate = predicate_generator(expected[k])
-      local local_result
-      local_result, act, msg, nmsg, exp = predicate(actual[k])
-      result = result and local_result
+      local local_result = predicate(actual[k])
+      -- Handle both table and legacy format
+      local pass
+      if type(local_result) == 'table' and local_result.pass ~= nil then
+        pass = local_result.pass
+        msg = local_result.positive_message
+      else
+        pass, _, msg = local_result
+      end
+      result = result and pass
     end
-    return result,
-           table_to_string(actual),
-           msg .. ' the value at every key of',
-           'not to ' .. msg .. ' the value at every key of',
-           table_to_string(expected)
+    return {
+      pass = result,
+      actual = table_to_string(actual),
+      positive_message = msg .. ' the value at every key of',
+      negative_message = 'not to ' .. msg .. ' the value at every key of',
+      expected = table_to_string(expected)
+    }
   end
 end
 
@@ -180,11 +234,13 @@ end
 function Near(expected, epsilon)
   return function(actual)
     local diff = math.abs(actual - expected)
-    return diff <= epsilon,
-           tostring(actual),
-           string.format('be within %s of', tostring(epsilon)),
-           string.format('not be within %s of', tostring(epsilon)),
-           tostring(expected)
+    return {
+      pass = diff <= epsilon,
+      actual = tostring(actual),
+      positive_message = string.format('be within %s of', tostring(epsilon)),
+      negative_message = string.format('not be within %s of', tostring(epsilon)),
+      expected = tostring(expected)
+    }
   end
 end
 
@@ -192,44 +248,52 @@ end
 function IsNaN()
   return function(actual)
     local is_nan = actual ~= actual
-    return is_nan,
-           tostring(actual),
-           'be NaN',
-           'not be NaN',
-           'NaN'
+    return {
+      pass = is_nan,
+      actual = tostring(actual),
+      positive_message = 'be NaN',
+      negative_message = 'not be NaN',
+      expected = 'NaN'
+    }
   end
 end
 
 --- Checks if value > 0
 function IsPositive()
   return function(actual)
-    return actual > 0,
-           tostring(actual),
-           'be positive',
-           'not be positive',
-           '> 0'
+    return {
+      pass = actual > 0,
+      actual = tostring(actual),
+      positive_message = 'be positive',
+      negative_message = 'not be positive',
+      expected = '> 0'
+    }
   end
 end
 
 --- Checks if value < 0
 function IsNegative()
   return function(actual)
-    return actual < 0,
-           tostring(actual),
-           'be negative',
-           'not be negative',
-           '< 0'
+    return {
+      pass = actual < 0,
+      actual = tostring(actual),
+      positive_message = 'be negative',
+      negative_message = 'not be negative',
+      expected = '< 0'
+    }
   end
 end
 
 --- Checks if value is between min and max (inclusive)
 function IsBetween(min, max)
   return function(actual)
-    return actual >= min and actual <= max,
-           tostring(actual),
-           string.format('be between %s and %s', tostring(min), tostring(max)),
-           string.format('not be between %s and %s', tostring(min), tostring(max)),
-           string.format('[%s, %s]', tostring(min), tostring(max))
+    return {
+      pass = actual >= min and actual <= max,
+      actual = tostring(actual),
+      positive_message = string.format('be between %s and %s', tostring(min), tostring(max)),
+      negative_message = string.format('not be between %s and %s', tostring(min), tostring(max)),
+      expected = string.format('[%s, %s]', tostring(min), tostring(max))
+    }
   end
 end
 
@@ -237,11 +301,13 @@ end
 function Contains(substring)
   return function(actual)
     local contains = type(actual) == 'string' and actual:find(substring, 1, true) ~= nil
-    return contains,
-           tostring(actual),
-           'contain',
-           'not contain',
-           tostring(substring)
+    return {
+      pass = contains,
+      actual = tostring(actual),
+      positive_message = 'contain',
+      negative_message = 'not contain',
+      expected = tostring(substring)
+    }
   end
 end
 
@@ -249,11 +315,13 @@ end
 function Matches(pattern)
   return function(actual)
     local matches = type(actual) == 'string' and actual:match(pattern) ~= nil
-    return matches,
-           tostring(actual),
-           'match pattern',
-           'not match pattern',
-           tostring(pattern)
+    return {
+      pass = matches,
+      actual = tostring(actual),
+      positive_message = 'match pattern',
+      negative_message = 'not match pattern',
+      expected = tostring(pattern)
+    }
   end
 end
 
@@ -266,11 +334,13 @@ function IsEmpty()
     elseif type(actual) == 'table' then
       is_empty = next(actual) == nil
     end
-    return is_empty,
-           tostring(actual),
-           'be empty',
-           'not be empty',
-           '{} or ""'
+    return {
+      pass = is_empty,
+      actual = tostring(actual),
+      positive_message = 'be empty',
+      negative_message = 'not be empty',
+      expected = '{} or ""'
+    }
   end
 end
 
@@ -278,11 +348,13 @@ end
 function HasLength(n)
   return function(actual)
     local has_length = type(actual) == 'string' and #actual == n
-    return has_length,
-           tostring(actual),
-           'have length',
-           'not have length',
-           tostring(n)
+    return {
+      pass = has_length,
+      actual = tostring(actual),
+      positive_message = 'have length',
+      negative_message = 'not have length',
+      expected = tostring(n)
+    }
   end
 end
 
@@ -295,11 +367,13 @@ function HasSize(n)
         size = size + 1
       end
     end
-    return size == n,
-           tostring(actual),
-           'have size',
-           'not have size',
-           tostring(n)
+    return {
+      pass = size == n,
+      actual = tostring(actual),
+      positive_message = 'have size',
+      negative_message = 'not have size',
+      expected = tostring(n)
+    }
   end
 end
 
@@ -315,11 +389,13 @@ function ContainsElement(element)
         end
       end
     end
-    return contains,
-           tostring(actual),
-           'contain element',
-           'not contain element',
-           tostring(element)
+    return {
+      pass = contains,
+      actual = tostring(actual),
+      positive_message = 'contain element',
+      negative_message = 'not contain element',
+      expected = tostring(element)
+    }
   end
 end
 
@@ -329,19 +405,30 @@ function AllOf(...)
   return function(actual)
     for _, matcher in ipairs(matchers) do
       local result = matcher(actual)
-      if not result then
-        return false,
-               tostring(actual),
-               'match all conditions',
-               'not match all conditions',
-               'all matchers'
+      -- Handle both table and legacy format
+      local pass
+      if type(result) == 'table' and result.pass ~= nil then
+        pass = result.pass
+      else
+        pass = result
+      end
+      if not pass then
+        return {
+          pass = false,
+          actual = tostring(actual),
+          positive_message = 'match all conditions',
+          negative_message = 'not match all conditions',
+          expected = 'all matchers'
+        }
       end
     end
-    return true,
-           tostring(actual),
-           'match all conditions',
-           'not match all conditions',
-           'all matchers'
+    return {
+      pass = true,
+      actual = tostring(actual),
+      positive_message = 'match all conditions',
+      negative_message = 'not match all conditions',
+      expected = 'all matchers'
+    }
   end
 end
 
@@ -351,19 +438,30 @@ function AnyOf(...)
   return function(actual)
     for _, matcher in ipairs(matchers) do
       local result = matcher(actual)
-      if result then
-        return true,
-               tostring(actual),
-               'match any condition',
-               'not match any condition',
-               'any matcher'
+      -- Handle both table and legacy format
+      local pass
+      if type(result) == 'table' and result.pass ~= nil then
+        pass = result.pass
+      else
+        pass = result
+      end
+      if pass then
+        return {
+          pass = true,
+          actual = tostring(actual),
+          positive_message = 'match any condition',
+          negative_message = 'not match any condition',
+          expected = 'any matcher'
+        }
       end
     end
-    return false,
-           tostring(actual),
-           'match any condition',
-           'not match any condition',
-           'any matcher'
+    return {
+      pass = false,
+      actual = tostring(actual),
+      positive_message = 'match any condition',
+      negative_message = 'not match any condition',
+      expected = 'any matcher'
+    }
   end
 end
 

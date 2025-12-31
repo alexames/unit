@@ -164,20 +164,24 @@ jestMatchers.containElement = matchers.ContainsElement
 jestMatchers.beNil = function() return matchers.Equals(nil) end
 jestMatchers.beTruthy = function()
   return function(actual)
-    return truthy(actual),
-           tostring(actual),
-           'be truthy',
-           'be not truthy',
-           'truthy value'
+    return {
+      pass = truthy(actual),
+      actual = tostring(actual),
+      positive_message = 'be truthy',
+      negative_message = 'be not truthy',
+      expected = 'truthy value'
+    }
   end
 end
 jestMatchers.beFalsy = function()
   return function(actual)
-    return falsey(actual),
-           tostring(actual),
-           'be falsy',
-           'be not falsy',
-           'falsy value'
+    return {
+      pass = falsey(actual),
+      actual = tostring(actual),
+      positive_message = 'be falsy',
+      negative_message = 'be not falsy',
+      expected = 'falsy value'
+    }
   end
 end
 jestMatchers.beNear = matchers.Near
@@ -208,8 +212,13 @@ local function match_args(actual_args, expected_args)
         if not result then
           return false
         end
+      elseif type(result) == 'table' and result.pass ~= nil then
+        -- New table format
+        if not result.pass then
+          return false
+        end
       else
-        -- Matcher returns (result, act, msg, nmsg, exp)
+        -- Legacy format: 5 return values (result, act, msg, nmsg, exp)
         local ok = result
         if not ok then
           return false
@@ -231,11 +240,15 @@ jestMatchers.toHaveBeenCalled = function()
       error('toHaveBeenCalled() expects a Mock, got ' .. type(actual), 3)
     end
     local count = actual:get_call_count()
-    return count > 0,
-           tostring(count) .. ' call(s)',
-           'have been called',
-           'not have been called',
-           'at least 1 call'
+    local matchers = require 'unit.matchers'
+    -- Access the helper function through a closure or recreate it
+    return {
+      pass = count > 0,
+      actual = tostring(count) .. ' call(s)',
+      positive_message = 'have been called',
+      negative_message = 'not have been called',
+      expected = 'at least 1 call'
+    }
   end
 end
 
@@ -245,11 +258,13 @@ jestMatchers.toHaveBeenCalledTimes = function(expected)
       error('toHaveBeenCalledTimes() expects a Mock, got ' .. type(actual), 3)
     end
     local count = actual:get_call_count()
-    return count == expected,
-           tostring(count) .. ' call(s)',
-           'have been called',
-           'not have been called',
-           tostring(expected) .. ' call(s)'
+    return {
+      pass = count == expected,
+      actual = tostring(count) .. ' call(s)',
+      positive_message = 'have been called',
+      negative_message = 'not have been called',
+      expected = tostring(expected) .. ' call(s)'
+    }
   end
 end
 
@@ -262,18 +277,22 @@ jestMatchers.toHaveBeenCalledWith = function(...)
     local calls = actual:get_calls()
     for _, call in ipairs(calls) do
       if match_args(call.args, expected_args) then
-        return true,
-               'mock was called',
-               'have been called with',
-               'not have been called with',
-               'arguments matching the call'
+        return {
+          pass = true,
+          actual = 'mock was called',
+          positive_message = 'have been called with',
+          negative_message = 'not have been called with',
+          expected = 'arguments matching the call'
+        }
       end
     end
-    return false,
-           'mock was not called with matching arguments',
-           'have been called with',
-           'not have been called with',
-           'arguments matching: ' .. table.concat(expected_args, ', ')
+    return {
+      pass = false,
+      actual = 'mock was not called with matching arguments',
+      positive_message = 'have been called with',
+      negative_message = 'not have been called with',
+      expected = 'arguments matching: ' .. table.concat(expected_args, ', ')
+    }
   end
 end
 
@@ -285,18 +304,22 @@ jestMatchers.toHaveBeenLastCalledWith = function(...)
     end
     local last_call = actual:get_last_call()
     if not last_call then
-      return false,
-             'mock was never called',
-             'have been last called with',
-             'not have been last called with',
-             'arguments matching: ' .. table.concat(expected_args, ', ')
+      return {
+        pass = false,
+        actual = 'mock was never called',
+        positive_message = 'have been last called with',
+        negative_message = 'not have been last called with',
+        expected = 'arguments matching: ' .. table.concat(expected_args, ', ')
+      }
     end
     local matched = match_args(last_call.args, expected_args)
-    return matched,
-           'last call was with: ' .. table.concat(last_call.args, ', '),
-           'have been last called with',
-           'not have been last called with',
-           'arguments matching: ' .. table.concat(expected_args, ', ')
+    return {
+      pass = matched,
+      actual = 'last call was with: ' .. table.concat(last_call.args, ', '),
+      positive_message = 'have been last called with',
+      negative_message = 'not have been last called with',
+      expected = 'arguments matching: ' .. table.concat(expected_args, ', ')
+    }
   end
 end
 
@@ -308,18 +331,22 @@ jestMatchers.toHaveBeenNthCalledWith = function(n, ...)
     end
     local call = actual:get_call(n)
     if not call then
-      return false,
-             'mock was called ' .. tostring(actual:get_call_count()) .. ' time(s)',
-             'have been nth called with',
-             'not have been nth called with',
-             'call #' .. tostring(n) .. ' with arguments matching: ' .. table.concat(expected_args, ', ')
+      return {
+        pass = false,
+        actual = 'mock was called ' .. tostring(actual:get_call_count()) .. ' time(s)',
+        positive_message = 'have been nth called with',
+        negative_message = 'not have been nth called with',
+        expected = 'call #' .. tostring(n) .. ' with arguments matching: ' .. table.concat(expected_args, ', ')
+      }
     end
     local matched = match_args(call.args, expected_args)
-    return matched,
-           'call #' .. tostring(n) .. ' was with: ' .. table.concat(call.args, ', '),
-           'have been nth called with',
-           'not have been nth called with',
-           'call #' .. tostring(n) .. ' with arguments matching: ' .. table.concat(expected_args, ', ')
+    return {
+      pass = matched,
+      actual = 'call #' .. tostring(n) .. ' was with: ' .. table.concat(call.args, ', '),
+      positive_message = 'have been nth called with',
+      negative_message = 'not have been nth called with',
+      expected = 'call #' .. tostring(n) .. ' with arguments matching: ' .. table.concat(expected_args, ', ')
+    }
   end
 end
 

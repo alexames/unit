@@ -16,8 +16,19 @@ local truthy, falsey = require 'llx.truthy' {'truthy', 'falsey'}
 -- @param[opt] s Optional string for description
 function EXPECT_THAT(actual, predicate, level, s)
   level = level or 2
-  local result, act, msg, nmsg, exp = predicate(actual, false)
-  if not result then
+  local result = predicate(actual, false)
+  -- Handle both new table format and legacy 5-value format
+  local pass, act, msg, exp
+  if type(result) == 'table' and result.pass ~= nil then
+    pass = result.pass
+    act = result.actual
+    msg = result.positive_message
+    exp = result.expected
+  else
+    -- Legacy format: 5 return values
+    pass, act, msg, _, exp = result
+  end
+  if not pass then
     error(('expected %s\n  %s\nto %s\n  %s'):format(s or '', act, msg, exp), level)
   end
 end
