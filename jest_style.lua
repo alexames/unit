@@ -19,6 +19,10 @@ local describe_context_stack = {}
 -- Global test suites registered via describe
 local jest_test_suites = llx.Table{}
 
+-- Global lifecycle hooks
+local global_before_all_hooks = {}
+local global_after_all_hooks = {}
+
 --- Public table for registering jest-style matchers.
 -- Users can add their own matchers by assigning to this table.
 -- Matchers should be functions that take arguments and return a matcher function.
@@ -361,6 +365,7 @@ local JestTestSuite = class 'JestTestSuite':extends(test.Test) {
     self._name_path = name_path or {suite_name}
     self._jest_tests = tests
     self._nested_suite_classes = nested_suite_classes or {}
+    self._before_all_run = false
     -- Instantiate nested suites
     self._nested_suites = {}
     for _, nested_class in ipairs(self._nested_suite_classes) do
@@ -384,7 +389,8 @@ local JestTestSuite = class 'JestTestSuite':extends(test.Test) {
       result:insert({
         index = test_index,
         name = test_case.name_path or {test_case.name},
-        func = test_case.func
+        func = test_case.func,
+        suite = self  -- Track which suite this test belongs to
       })
       test_index = test_index + 1
     end
@@ -396,7 +402,8 @@ local JestTestSuite = class 'JestTestSuite':extends(test.Test) {
         result:insert({
           index = test_index,
           name = nested_test.name,
-          func = nested_test.func
+          func = nested_test.func,
+          suite = nested_test.suite or nested_suite  -- Track nested suite
         })
         test_index = test_index + 1
       end
@@ -408,6 +415,80 @@ local JestTestSuite = class 'JestTestSuite':extends(test.Test) {
   -- Override name() to return the full path
   name = function(self)
     return table.concat(self._name_path, ' > ')
+  end,
+  
+  -- Override run_tests to add beforeAll/afterAll support
+  run_tests = function(self, printer)
+    if not self._initialized then
+      error(string.format('a test_class was not initialized. '
+                          .. 'Remember to call `self.Test.__init`'),
+            3)
+    end
+    
+    -- Run beforeAll hook once before all tests
+    local before_all = getmetatable(self).__jest_before_all
+    if before_all and before_all ~= llx.noop and not self._before_all_run then
+      local success, err = pcall(before_all)
+      if not success then
+        printer.class_preamble(self)
+        printer.class_conclusion(self, #self._tests) -- Mark all as failed
+        return #self._tests, #self._tests
+      end
+      self._before_all_run = true
+    end
+    
+    printer.class_preamble(self)
+    local failure_count = 0
+    local current_suite = nil
+    local suite_before_all_run = {}
+    
+    for _, test in pairs(self._tests) do
+      -- Run beforeAll for the test's suite if it's different from current
+      local test_suite = test.suite or self
+      if test_suite ~= current_suite then
+        current_suite = test_suite
+        if test_suite ~= self then
+          -- This is a nested suite test, run its beforeAll if not already run
+          if not suite_before_all_run[test_suite] then
+            local nested_before_all = getmetatable(test_suite).__jest_before_all
+            if nested_before_all and nested_before_all ~= llx.noop then
+              pcall(nested_before_all)
+              suite_before_all_run[test_suite] = true
+            end
+          end
+        end
+      end
+      
+      if test.arguments == nil or #test.arguments == 0 then
+        local successful = self:run_test(printer, test)
+        if not successful then
+          failure_count = failure_count + 1
+        end
+      else
+        for _, arguments in product(table.unpack(test.arguments)) do
+          local successful = self:run_test(printer, test, table.unpack(arguments))
+          if not successful then
+            failure_count = failure_count + 1
+          end
+        end
+      end
+    end
+    
+    -- Run afterAll hooks for all suites that had tests
+    local suites_to_cleanup = {[self] = true}
+    for suite, _ in pairs(suite_before_all_run) do
+      suites_to_cleanup[suite] = true
+    end
+    for suite, _ in pairs(suites_to_cleanup) do
+      local after_all = getmetatable(suite).__jest_after_all
+      if after_all and after_all ~= llx.noop then
+        pcall(after_all)
+      end
+    end
+    
+    printer.class_conclusion(self, failure_count)
+    
+    return failure_count, #self._tests
   end,
 }
 
@@ -457,6 +538,8 @@ local function describe(name, func)
     nested_suites = {},
     setup = llx.noop,
     teardown = llx.noop,
+    before_all = llx.noop,
+    after_all = llx.noop,
   }
   
   table.insert(describe_context_stack, context)
@@ -483,6 +566,8 @@ local function describe(name, func)
   suite_class.__jest_name_path = context.name_path
   suite_class.__jest_setup = context.setup
   suite_class.__jest_teardown = context.teardown
+  suite_class.__jest_before_all = context.before_all
+  suite_class.__jest_after_all = context.after_all
   
   -- Override setup/teardown if provided
   if context.setup ~= llx.noop then
@@ -521,6 +606,44 @@ local function afterEach(func)
   context.teardown = func
 end
 
+--- Setup function that runs once before all tests in the current describe block
+-- @param func Setup function
+local function beforeAll(func)
+  local context = describe_context_stack[#describe_context_stack]
+  if not context then
+    error('beforeAll() must be called within a describe() block', 2)
+  end
+  context.before_all = func
+end
+
+--- Teardown function that runs once after all tests in the current describe block
+-- @param func Teardown function
+local function afterAll(func)
+  local context = describe_context_stack[#describe_context_stack]
+  if not context then
+    error('afterAll() must be called within a describe() block', 2)
+  end
+  context.after_all = func
+end
+
+--- Global setup function that runs once before all test suites
+-- @param func Setup function
+local function globalBeforeAll(func)
+  if type(func) ~= 'function' then
+    error('globalBeforeAll() expects a function, got ' .. type(func), 2)
+  end
+  table.insert(global_before_all_hooks, func)
+end
+
+--- Global teardown function that runs once after all test suites
+-- @param func Teardown function
+local function globalAfterAll(func)
+  if type(func) ~= 'function' then
+    error('globalAfterAll() expects a function, got ' .. type(func), 2)
+  end
+  table.insert(global_after_all_hooks, func)
+end
+
 --- Runs all Jest-style tests
 -- @param[opt] filter A string to match against test suite names
 -- @param[opt] logger An optional logger object to capture output
@@ -529,6 +652,14 @@ local function run_jest_tests(filter, logger)
   logger = logger or test_logger.JestLogger()
   local total_failure_count = 0
   local total_test_count = 0
+
+  -- Run global beforeAll hooks
+  for _, hook in ipairs(global_before_all_hooks) do
+    local success, err = pcall(hook)
+    if not success then
+      error('Error in global beforeAll hook: ' .. tostring(err), 2)
+    end
+  end
 
   logger.prelude()
   for _, cls in ipairs(jest_test_suites) do
@@ -545,6 +676,12 @@ local function run_jest_tests(filter, logger)
     end
   end
   logger.finale(total_failure_count, total_test_count)
+  
+  -- Run global afterAll hooks
+  for _, hook in ipairs(global_after_all_hooks) do
+    pcall(hook)
+  end
+  
   return total_failure_count, total_test_count
 end
 
@@ -555,6 +692,10 @@ return {
   expect = expect,
   beforeEach = beforeEach,
   afterEach = afterEach,
+  beforeAll = beforeAll,
+  afterAll = afterAll,
+  globalBeforeAll = globalBeforeAll,
+  globalAfterAll = globalAfterAll,
   run_jest_tests = run_jest_tests,
   jest_test_suites = jest_test_suites,
   jestMatchers = jestMatchers,

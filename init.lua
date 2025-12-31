@@ -83,6 +83,10 @@ local test_env = {
   expect = jest_style.expect,
   beforeEach = jest_style.beforeEach,
   afterEach = jest_style.afterEach,
+  beforeAll = jest_style.beforeAll,
+  afterAll = jest_style.afterAll,
+  globalBeforeAll = jest_style.globalBeforeAll,
+  globalAfterAll = jest_style.globalAfterAll,
   run_jest_tests = jest_style.run_jest_tests,
   jestMatchers = jest_style.jestMatchers,
 }
