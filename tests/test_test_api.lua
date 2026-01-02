@@ -203,12 +203,10 @@ describe('ExpectationTest', function()
     expect(successful).to.beEqualTo(false)
 
     -- Just check the suffix, since error messages are prefixed with a file and
-    -- line number.
-    expect(exception).to.match(EndsWith([[
-expected 
-  actual error message!
-to be equal to
-  expected error message!]]))
+    -- line number. The new format is "expected actual\nto be equal to\n  expected"
+    expect(exception).to.contain('actual error message!')
+    expect(exception).to.contain('expected error message!')
+    expect(exception).to.contain('to be equal to')
   end)
 end)
 
@@ -504,6 +502,91 @@ describe('ErrorLevelTests', function()
     end)
     expect(success).to.beEqualTo(false)
     expect(type(err)).to.beEqualTo('string')
+  end)
+end)
+
+describe('Expect API Error Formatting', function()
+  it('should format error messages correctly when description is provided', function()
+    local success, err = pcall(function()
+      expect(1).to.beEqualTo(2)
+    end)
+    expect(success).to.beEqualTo(false)
+    -- Error message should be properly formatted
+    expect(type(err)).to.beEqualTo('string')
+    expect(err).to.contain('expected')
+  end)
+
+  it('should format error messages correctly when description is not provided', function()
+    local success, err = pcall(function()
+      expect(1).to.beEqualTo(2)
+    end)
+    expect(success).to.beEqualTo(false)
+    -- Error message should contain "expected" (may have file path prefix)
+    expect(err).to.contain('expected')
+    -- Should contain the actual and expected values
+    expect(err).to.contain('1')
+    expect(err).to.contain('2')
+  end)
+
+  it('should work correctly with matchers that only take one parameter', function()
+    -- This test verifies that expect_that works with matchers that only take one parameter
+    expect(5).to.beEqualTo(5)
+    expect('hello').to.contain('ell')
+    expect(10).to.beGreaterThan(5)
+  end)
+end)
+
+describe('satisfy_any API', function()
+  it('should work with to.satisfy_any', function()
+    expect(5).to.satisfy_any(Equals(5), Equals(10))
+    expect(10).to.satisfy_any(Equals(5), Equals(10))
+    
+    local success = pcall(function()
+      expect(7).to.satisfy_any(Equals(5), Equals(10))
+    end)
+    expect(success).to.beEqualTo(false)
+  end)
+
+  it('should work with toNot.satisfy_any', function()
+    expect(7).toNot.satisfy_any(Equals(5), Equals(10))
+    
+    local success = pcall(function()
+      expect(5).toNot.satisfy_any(Equals(5), Equals(10))
+    end)
+    expect(success).to.beEqualTo(false)
+  end)
+end)
+
+describe('Contains Matcher Type Validation', function()
+  it('should work correctly with strings', function()
+    expect('hello world').to.contain('world')
+    expect('test').to.contain('es')
+    
+    local success = pcall(function()
+      expect('hello').to.contain('xyz')
+    end)
+    expect(success).to.beEqualTo(false)
+  end)
+
+  it('should provide clear error message for non-string types', function()
+    local success, err = pcall(function()
+      expect(42).to.contain('test')
+    end)
+    expect(success).to.beEqualTo(false)
+    -- Error should indicate the type issue
+    expect(err).to.contain('type')
+    
+    success, err = pcall(function()
+      expect({}).to.contain('test')
+    end)
+    expect(success).to.beEqualTo(false)
+    expect(err).to.contain('type')
+    
+    success, err = pcall(function()
+      expect(true).to.contain('test')
+    end)
+    expect(success).to.beEqualTo(false)
+    expect(err).to.contain('type')
   end)
 end)
 

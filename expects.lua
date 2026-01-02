@@ -28,12 +28,13 @@ local has_size = matchers.has_size
 -- @param[opt] s Optional string for description
 function expect_that(actual, predicate, level, s)
   level = level or 2
-  local result = predicate(actual, false)
+  local result = predicate(actual)
   if type(result) ~= 'table' or result.pass == nil then
     error('Matcher must return a table with pass, actual, positive_message, negative_message, and expected fields', level)
   end
   if not result.pass then
-    error(('expected %s\n  %s\nto %s\n  %s'):format(s or '', result.actual, result.positive_message, result.expected), level)
+    local prefix = s and ('expected ' .. s .. '\n  ') or 'expected '
+    error(prefix .. result.actual .. '\nto ' .. result.positive_message .. '\n  ' .. result.expected, level)
   end
 end
 

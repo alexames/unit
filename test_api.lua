@@ -132,7 +132,7 @@ local function expect(actual)
         return function(...)
           expects.expect_that(expect_obj._actual, matchers.negate(matchers.all_of(...)), 3)
         end
-      elseif key == 'satisfyAny' then
+      elseif key == 'satisfy_any' then
         return function(...)
           expects.expect_that(expect_obj._actual, matchers.negate(matchers.any_of(...)), 3)
         end
@@ -203,17 +203,44 @@ local function is_mock(value)
   return type(value) == 'table' and getmetatable(value) == Mock
 end
 
+-- Helper to format arguments for error messages
+-- Handles matchers, nil values, and non-string types
+local function format_args(args)
+  local formatted = {}
+  for _, arg in ipairs(args) do
+    if type(arg) == 'function' then
+      -- This is likely a matcher function
+      table.insert(formatted, '<matcher>')
+    elseif arg == nil then
+      table.insert(formatted, 'nil')
+    else
+      table.insert(formatted, tostring(arg))
+    end
+  end
+  return table.concat(formatted, ', ')
+end
+
 -- Helper to match arguments using matchers
+-- Handles nil values explicitly and supports matcher functions
 local function match_args(actual_args, expected_args)
+  -- Check length first
   if #actual_args ~= #expected_args then
     return false
   end
   
+  -- Iterate through all arguments (ipairs handles nil correctly)
   for i, expected in ipairs(expected_args) do
     local actual = actual_args[i]
     
+    -- Handle nil values explicitly
+    if expected == nil and actual ~= nil then
+      return false
+    elseif expected ~= nil and actual == nil then
+      return false
+    elseif expected == nil and actual == nil then
+      -- Both nil, continue to next argument
     -- If expected is a matcher function, use it
-    if type(expected) == 'function' then
+    elseif type(expected) == 'function' then
       local result = expected(actual)
       if type(result) ~= 'table' or result.pass == nil then
         error('Matcher must return a table with pass, actual, positive_message, negative_message, and expected fields', 2)
@@ -286,7 +313,7 @@ custom_matchers.toHaveBeenCalledWith = function(...)
       actual = 'mock was not called with matching arguments',
       positive_message = 'have been called with',
       negative_message = 'not have been called with',
-      expected = 'arguments matching: ' .. table.concat(expected_args, ', ')
+      expected = 'arguments matching: ' .. format_args(expected_args)
     }
   end
 end
@@ -304,21 +331,25 @@ custom_matchers.toHaveBeenLastCalledWith = function(...)
         actual = 'mock was never called',
         positive_message = 'have been last called with',
         negative_message = 'not have been last called with',
-        expected = 'arguments matching: ' .. table.concat(expected_args, ', ')
+        expected = 'arguments matching: ' .. format_args(expected_args)
       }
     end
     local matched = match_args(last_call.args, expected_args)
     return {
       pass = matched,
-      actual = 'last call was with: ' .. table.concat(last_call.args, ', '),
+      actual = 'last call was with: ' .. format_args(last_call.args),
       positive_message = 'have been last called with',
       negative_message = 'not have been last called with',
-      expected = 'arguments matching: ' .. table.concat(expected_args, ', ')
+      expected = 'arguments matching: ' .. format_args(expected_args)
     }
   end
 end
 
 custom_matchers.toHaveBeenNthCalledWith = function(n, ...)
+  -- Validate n is a positive integer
+  if type(n) ~= 'number' or n < 1 or math.floor(n) ~= n then
+    error('toHaveBeenNthCalledWith() expects a positive integer as first argument, got ' .. tostring(n), 3)
+  end
   local expected_args = {...}
   return function(actual)
     if not is_mock(actual) then
@@ -331,16 +362,16 @@ custom_matchers.toHaveBeenNthCalledWith = function(n, ...)
         actual = 'mock was called ' .. tostring(actual:get_call_count()) .. ' time(s)',
         positive_message = 'have been nth called with',
         negative_message = 'not have been nth called with',
-        expected = 'call #' .. tostring(n) .. ' with arguments matching: ' .. table.concat(expected_args, ', ')
+        expected = 'call #' .. tostring(n) .. ' with arguments matching: ' .. format_args(expected_args)
       }
     end
     local matched = match_args(call.args, expected_args)
     return {
       pass = matched,
-      actual = 'call #' .. tostring(n) .. ' was with: ' .. table.concat(call.args, ', '),
+      actual = 'call #' .. tostring(n) .. ' was with: ' .. format_args(call.args),
       positive_message = 'have been nth called with',
       negative_message = 'not have been nth called with',
-      expected = 'call #' .. tostring(n) .. ' with arguments matching: ' .. table.concat(expected_args, ', ')
+      expected = 'call #' .. tostring(n) .. ' with arguments matching: ' .. format_args(expected_args)
     }
   end
 end

@@ -284,7 +284,16 @@ end
 --- Checks if string contains substring
 function contains(substring)
   return function(actual)
-    local contains = type(actual) == 'string' and actual:find(substring, 1, true) ~= nil
+    if type(actual) ~= 'string' then
+      return {
+        pass = false,
+        actual = tostring(actual) .. ' (type: ' .. type(actual) .. ')',
+        positive_message = 'contain',
+        negative_message = 'not contain',
+        expected = 'string containing: ' .. tostring(substring)
+      }
+    end
+    local contains = actual:find(substring, 1, true) ~= nil
     return {
       pass = contains,
       actual = tostring(actual),

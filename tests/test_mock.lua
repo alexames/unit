@@ -217,6 +217,190 @@ describe('Mock', function()
     expect(a2).to.beEqualTo(3)
     expect(b2).to.beEqualTo(4)
   end)
+
+  describe('Argument type handling', function()
+    it('should handle numeric arguments in toHaveBeenCalledWith', function()
+      local mock = Mock()
+      mock(42, 100, 3.14)
+      
+      expect(mock).to.toHaveBeenCalledWith(42, 100, 3.14)
+      expect(mock).toNot.toHaveBeenCalledWith(1, 2, 3)
+    end)
+
+    it('should handle nil arguments in toHaveBeenCalledWith', function()
+      local mock = Mock()
+      mock(nil, 'hello', nil)
+      
+      expect(mock).to.toHaveBeenCalledWith(nil, 'hello', nil)
+      expect(mock).toNot.toHaveBeenCalledWith('hello', nil, 'world')
+    end)
+
+    it('should handle matcher functions in toHaveBeenCalledWith error messages', function()
+      local mock = Mock()
+      mock(42, 'hello world')
+      
+      -- This should work without crashing
+      expect(mock).to.toHaveBeenCalledWith(Equals(42), StartsWith('hello'))
+      
+      -- Test error message when it fails
+      local success, err = pcall(function()
+        expect(mock).to.toHaveBeenCalledWith(Equals(99), StartsWith('goodbye'))
+      end)
+      expect(success).to.beEqualTo(false)
+      -- Error message should contain '<matcher>' instead of function object
+      expect(err).to.contain('<matcher>')
+    end)
+
+    it('should handle mixed types in toHaveBeenLastCalledWith', function()
+      local mock = Mock()
+      mock('first', 1)
+      mock('second', 2, true, nil)
+      
+      expect(mock).to.toHaveBeenLastCalledWith('second', 2, true, nil)
+      
+      -- Test error message formatting
+      local success, err = pcall(function()
+        expect(mock).to.toHaveBeenLastCalledWith('wrong', 99)
+      end)
+      expect(success).to.beEqualTo(false)
+      expect(err).to.contain('last call was with')
+    end)
+
+    it('should handle matchers in toHaveBeenNthCalledWith error messages', function()
+      local mock = Mock()
+      mock('first', 1)
+      mock('second', 2)
+      mock('third', 3)
+      
+      expect(mock).to.toHaveBeenNthCalledWith(2, 'second', 2)
+      
+      -- Test error message when it fails
+      local success, err = pcall(function()
+        expect(mock).to.toHaveBeenNthCalledWith(1, Equals('wrong'), GreaterThan(100))
+      end)
+      expect(success).to.beEqualTo(false)
+      -- Error message should contain '<matcher>' instead of function object
+      expect(err).to.contain('<matcher>')
+    end)
+  end)
+
+  describe('Nil argument handling', function()
+    it('should correctly match nil values', function()
+      local mock = Mock()
+      mock(nil, 'hello', nil)
+      
+      expect(mock).to.toHaveBeenCalledWith(nil, 'hello', nil)
+      expect(mock).toNot.toHaveBeenCalledWith('hello', nil, 'world')
+    end)
+
+    it('should correctly distinguish nil from non-nil', function()
+      local mock = Mock()
+      mock('hello', nil, 'world')
+      
+      -- Should match when nil is in the same position
+      expect(mock).to.toHaveBeenCalledWith('hello', nil, 'world')
+      -- Should not match when a non-nil value is in the nil position
+      expect(mock).toNot.toHaveBeenCalledWith('hello', 'notnil', 'world')
+      -- Should not match when first arg is different
+      expect(mock).toNot.toHaveBeenCalledWith('goodbye', nil, 'world')
+    end)
+
+    it('should work with matchers and nil', function()
+      local mock = Mock()
+      mock(nil, 42, 'test')
+      
+      -- Should match when nil and matchers match
+      expect(mock).to.toHaveBeenCalledWith(nil, Equals(42), StartsWith('te'))
+      -- Should not match when nil position has a value
+      expect(mock).toNot.toHaveBeenCalledWith('notnil', Equals(42), StartsWith('te'))
+      -- Should match when all matchers pass
+      expect(mock).to.toHaveBeenCalledWith(nil, GreaterThan(40), Contains('te'))
+      
+      -- Test with nil in different positions
+      local mock2 = Mock()
+      mock2(42, nil, 'test')
+      expect(mock2).to.toHaveBeenCalledWith(Equals(42), nil, StartsWith('te'))
+      expect(mock2).toNot.toHaveBeenCalledWith(Equals(99), nil, StartsWith('te'))
+    end)
+  end)
+
+  describe('toHaveBeenNthCalledWith validation', function()
+    it('should accept valid positive integers', function()
+      local mock = Mock()
+      mock('first')
+      mock('second')
+      mock('third')
+      
+      expect(mock).to.toHaveBeenNthCalledWith(1, 'first')
+      expect(mock).to.toHaveBeenNthCalledWith(2, 'second')
+      expect(mock).to.toHaveBeenNthCalledWith(3, 'third')
+    end)
+
+    it('should reject non-integer values', function()
+      local mock = Mock()
+      mock('test')
+      
+      local success, err = pcall(function()
+        expect(mock).to.toHaveBeenNthCalledWith(1.5, 'test')
+      end)
+      expect(success).to.beEqualTo(false)
+      expect(err).to.contain('positive integer')
+      
+      success, err = pcall(function()
+        expect(mock).to.toHaveBeenNthCalledWith('1', 'test')
+      end)
+      expect(success).to.beEqualTo(false)
+      expect(err).to.contain('positive integer')
+    end)
+
+    it('should reject zero and negative numbers', function()
+      local mock = Mock()
+      mock('test')
+      
+      local success, err = pcall(function()
+        expect(mock).to.toHaveBeenNthCalledWith(0, 'test')
+      end)
+      expect(success).to.beEqualTo(false)
+      expect(err).to.contain('positive integer')
+      
+      success, err = pcall(function()
+        expect(mock).to.toHaveBeenNthCalledWith(-1, 'test')
+      end)
+      expect(success).to.beEqualTo(false)
+      expect(err).to.contain('positive integer')
+    end)
+  end)
+
+  describe('Error message formatting', function()
+    it('should format matcher error messages clearly', function()
+      local mock = Mock()
+      mock(42, 'hello')
+      
+      -- When using matchers, error messages should be readable
+      local success, err = pcall(function()
+        expect(mock).to.toHaveBeenCalledWith(Equals(99), StartsWith('goodbye'))
+      end)
+      expect(success).to.beEqualTo(false)
+      -- Should not contain function object representations
+      expect(err).toNot.contain('function:')
+      expect(err).to.contain('arguments matching')
+    end)
+
+    it('should format last call error messages with proper types', function()
+      local mock = Mock()
+      mock(1, 2, 3)
+      mock('a', 'b', true, nil)
+      
+      local success, err = pcall(function()
+        expect(mock).to.toHaveBeenLastCalledWith('wrong', 99)
+      end)
+      expect(success).to.beEqualTo(false)
+      -- Error should show the actual call arguments properly formatted
+      expect(err).to.contain('last call was with')
+      expect(err).to.contain('a')
+      expect(err).to.contain('b')
+    end)
+  end)
 end)
 
 describe('spyOn', function()
