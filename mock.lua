@@ -178,13 +178,13 @@ Mock = class 'Mock' {
 -- @param object The object to spy on
 -- @param method_name The name of the method to spy on
 -- @return A Mock instance that wraps the original method
-local function spyOn(object, method_name)
+local function spy_on(object, method_name)
   local original = object[method_name]
   if not original then
-    error('spyOn: method "' .. tostring(method_name) .. '" does not exist on object', 2)
+    error('spy_on: method "' .. tostring(method_name) .. '" does not exist on object', 2)
   end
   if type(original) ~= 'function' then
-    error('spyOn: "' .. tostring(method_name) .. '" is not a function', 2)
+    error('spy_on: "' .. tostring(method_name) .. '" is not a function', 2)
   end
   
   local spy = Mock()
@@ -216,5 +216,5 @@ end
 
 return {
   Mock = Mock,
-  spyOn = spyOn,
+  spy_on = spy_on,
 }

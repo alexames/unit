@@ -9,9 +9,11 @@ local expects = require 'unit.expects'
 local matchers = require 'unit.matchers'
 local mock_module = require 'unit.mock'
 local truthy, falsey = require 'llx.truthy' {'truthy', 'falsey'}
+local functional = require 'llx.functional'
 
 local class = llx.class
 local Mock = mock_module.Mock
+local product = functional.product
 
 -- Context stack for nested describe blocks
 local describe_context_stack = {}
@@ -26,12 +28,12 @@ local global_after_all_hooks = {}
 --- Public table for registering jest-style matchers.
 -- Users can add their own matchers by assigning to this table.
 -- Matchers should be functions that take arguments and return a matcher function.
--- For example: jestMatchers.beEqualTo = matchers.Equals
-local jestMatchers = {}
+-- For example: jest_matchers.beEqualTo = matchers.equals
+local jest_matchers = {}
 
 --- Creates an expect object with matcher methods
 -- @param actual The actual value to test
--- @return An object with to and toNot properties
+-- @return An object with to and to_not properties
 local function expect(actual)
   local expect_obj = {
     _actual = actual,
@@ -43,12 +45,12 @@ local function expect(actual)
       return nil
     end
     
-    return function(...)
+      return function(...)
       local matcher = matcher_creator(...)
       if negated then
-        matcher = matchers.Not(matcher)
+        matcher = matchers.negate(matcher)
       end
-      expects.EXPECT_THAT(expect_obj._actual, matcher, 3)
+      expects.expect_that(expect_obj._actual, matcher, 3)
     end
   end
 
@@ -72,12 +74,12 @@ local function expect(actual)
               local path_colon = exception:find(':', 1, true)
               local line_colon = exception:find(':', path_colon + 1, true)
               if line_colon then
-                expects.EXPECT_EQ(exception:sub(line_colon + 2), expected, level + 1)
+                expects.expect_eq(exception:sub(line_colon + 2), expected, level + 1)
               else
-                expects.EXPECT_EQ(exception, expected, level + 1)
+                expects.expect_eq(exception, expected, level + 1)
               end
             else
-              expects.EXPECT_EQ(exception, expected, level + 1)
+              expects.expect_eq(exception, expected, level + 1)
             end
           end
           if successful then
@@ -86,19 +88,19 @@ local function expect(actual)
         end
       elseif key == 'match' then
         return function(matcher_func)
-          expects.EXPECT_THAT(expect_obj._actual, matcher_func, 3)
+          expects.expect_that(expect_obj._actual, matcher_func, 3)
         end
       elseif key == 'satisfy' then
         return function(...)
-          expects.EXPECT_THAT(expect_obj._actual, matchers.AllOf(...), 3)
+          expects.expect_that(expect_obj._actual, matchers.all_of(...), 3)
         end
-      elseif key == 'satisfyAny' then
+      elseif key == 'satisfy_any' then
         return function(...)
-          expects.EXPECT_THAT(expect_obj._actual, matchers.AnyOf(...), 3)
+          expects.expect_that(expect_obj._actual, matchers.any_of(...), 3)
         end
       else
-        -- Look up in jestMatchers
-        local matcher_creator = jestMatchers[key]
+        -- Look up in jest_matchers
+        local matcher_creator = jest_matchers[key]
         if matcher_creator then
           return create_matcher_method(matcher_creator, false)
         end
@@ -107,8 +109,8 @@ local function expect(actual)
     end
   })
 
-  local toNot_proxy = {}
-  setmetatable(toNot_proxy, {
+  local to_not_proxy = {}
+  setmetatable(to_not_proxy, {
     __index = function(_, key)
       -- Handle special matchers
       if key == 'throw' then
@@ -124,19 +126,19 @@ local function expect(actual)
         end
       elseif key == 'match' then
         return function(matcher_func)
-          expects.EXPECT_THAT(expect_obj._actual, matchers.Not(matcher_func), 3)
+          expects.expect_that(expect_obj._actual, matchers.negate(matcher_func), 3)
         end
       elseif key == 'satisfy' then
         return function(...)
-          expects.EXPECT_THAT(expect_obj._actual, matchers.Not(matchers.AllOf(...)), 3)
+          expects.expect_that(expect_obj._actual, matchers.negate(matchers.all_of(...)), 3)
         end
       elseif key == 'satisfyAny' then
         return function(...)
-          expects.EXPECT_THAT(expect_obj._actual, matchers.Not(matchers.AnyOf(...)), 3)
+          expects.expect_that(expect_obj._actual, matchers.negate(matchers.any_of(...)), 3)
         end
       else
-        -- Look up in jestMatchers
-        local matcher_creator = jestMatchers[key]
+        -- Look up in jest_matchers
+        local matcher_creator = jest_matchers[key]
         if matcher_creator then
           return create_matcher_method(matcher_creator, true)
         end
@@ -146,27 +148,27 @@ local function expect(actual)
   })
 
   expect_obj.to = to_proxy
-  expect_obj.toNot = toNot_proxy
+  expect_obj.to_not = to_not_proxy
 
   return expect_obj
 end
 
 -- Register all built-in matchers
-jestMatchers.beEqualTo = matchers.Equals
-jestMatchers.beGreaterThan = matchers.GreaterThan
-jestMatchers.beGreaterThanOrEqual = matchers.GreaterThanOrEqual
-jestMatchers.beLessThan = matchers.LessThan
-jestMatchers.beLessThanOrEqual = matchers.LessThanOrEqual
-jestMatchers.contain = matchers.Contains
-jestMatchers.matchPattern = matchers.Matches
-jestMatchers.startWith = matchers.StartsWith
-jestMatchers.endWith = matchers.EndsWith
-jestMatchers.haveLength = matchers.HasLength
-jestMatchers.beEmpty = function() return matchers.IsEmpty() end
-jestMatchers.haveSize = matchers.HasSize
-jestMatchers.containElement = matchers.ContainsElement
-jestMatchers.beNil = function() return matchers.Equals(nil) end
-jestMatchers.beTruthy = function()
+jest_matchers.beEqualTo = matchers.equals
+jest_matchers.beGreaterThan = matchers.greater_than
+jest_matchers.beGreaterThanOrEqual = matchers.greater_than_or_equal
+jest_matchers.beLessThan = matchers.less_than
+jest_matchers.beLessThanOrEqual = matchers.less_than_or_equal
+jest_matchers.contain = matchers.contains
+jest_matchers.matchPattern = matchers.matches
+jest_matchers.startWith = matchers.starts_with
+jest_matchers.endWith = matchers.ends_with
+jest_matchers.haveLength = matchers.has_length
+jest_matchers.beEmpty = function() return matchers.is_empty() end
+jest_matchers.haveSize = matchers.has_size
+jest_matchers.containElement = matchers.contains_element
+jest_matchers.beNil = function() return matchers.equals(nil) end
+jest_matchers.beTruthy = function()
   return function(actual)
     return {
       pass = truthy(actual),
@@ -177,7 +179,7 @@ jestMatchers.beTruthy = function()
     }
   end
 end
-jestMatchers.beFalsy = function()
+jest_matchers.beFalsy = function()
   return function(actual)
     return {
       pass = falsey(actual),
@@ -188,12 +190,12 @@ jestMatchers.beFalsy = function()
     }
   end
 end
-jestMatchers.beNear = matchers.Near
-jestMatchers.bePositive = function() return matchers.IsPositive() end
-jestMatchers.beNegative = function() return matchers.IsNegative() end
-jestMatchers.beBetween = matchers.IsBetween
-jestMatchers.beNaN = function() return matchers.IsNaN() end
-jestMatchers.beOfType = matchers.IsOfType
+jest_matchers.beNear = matchers.near
+jest_matchers.bePositive = function() return matchers.is_positive() end
+jest_matchers.beNegative = function() return matchers.is_negative() end
+jest_matchers.beBetween = matchers.is_between
+jest_matchers.beNaN = function() return matchers.is_nan() end
+jest_matchers.beOfType = matchers.is_of_type
 
 -- Helper to check if value is a Mock instance
 local function is_mock(value)
@@ -228,14 +230,12 @@ local function match_args(actual_args, expected_args)
 end
 
 -- Mock matchers
-jestMatchers.toHaveBeenCalled = function()
+jest_matchers.toHaveBeenCalled = function()
   return function(actual)
     if not is_mock(actual) then
       error('toHaveBeenCalled() expects a Mock, got ' .. type(actual), 3)
     end
     local count = actual:get_call_count()
-    local matchers = require 'unit.matchers'
-    -- Access the helper function through a closure or recreate it
     return {
       pass = count > 0,
       actual = tostring(count) .. ' call(s)',
@@ -246,7 +246,7 @@ jestMatchers.toHaveBeenCalled = function()
   end
 end
 
-jestMatchers.toHaveBeenCalledTimes = function(expected)
+jest_matchers.toHaveBeenCalledTimes = function(expected)
   return function(actual)
     if not is_mock(actual) then
       error('toHaveBeenCalledTimes() expects a Mock, got ' .. type(actual), 3)
@@ -262,7 +262,7 @@ jestMatchers.toHaveBeenCalledTimes = function(expected)
   end
 end
 
-jestMatchers.toHaveBeenCalledWith = function(...)
+jest_matchers.toHaveBeenCalledWith = function(...)
   local expected_args = {...}
   return function(actual)
     if not is_mock(actual) then
@@ -290,7 +290,7 @@ jestMatchers.toHaveBeenCalledWith = function(...)
   end
 end
 
-jestMatchers.toHaveBeenLastCalledWith = function(...)
+jest_matchers.toHaveBeenLastCalledWith = function(...)
   local expected_args = {...}
   return function(actual)
     if not is_mock(actual) then
@@ -317,7 +317,7 @@ jestMatchers.toHaveBeenLastCalledWith = function(...)
   end
 end
 
-jestMatchers.toHaveBeenNthCalledWith = function(n, ...)
+jest_matchers.toHaveBeenNthCalledWith = function(n, ...)
   local expected_args = {...}
   return function(actual)
     if not is_mock(actual) then
@@ -344,7 +344,7 @@ jestMatchers.toHaveBeenNthCalledWith = function(n, ...)
   end
 end
 
--- Special matchers that need custom handling (not registered in jestMatchers)
+-- Special matchers that need custom handling (not registered in jest_matchers)
 -- These are handled directly in the proxy __index functions
 
 --- Test class for Jest-style tests
@@ -578,58 +578,58 @@ end
 
 --- Setup function for the current describe block
 -- @param func Setup function
-local function beforeEach(func)
+local function before_each(func)
   local context = describe_context_stack[#describe_context_stack]
   if not context then
-    error('beforeEach() must be called within a describe() block', 2)
+    error('before_each() must be called within a describe() block', 2)
   end
   context.setup = func
 end
 
 --- Teardown function for the current describe block
 -- @param func Teardown function
-local function afterEach(func)
+local function after_each(func)
   local context = describe_context_stack[#describe_context_stack]
   if not context then
-    error('afterEach() must be called within a describe() block', 2)
+    error('after_each() must be called within a describe() block', 2)
   end
   context.teardown = func
 end
 
 --- Setup function that runs once before all tests in the current describe block
 -- @param func Setup function
-local function beforeAll(func)
+local function before_all(func)
   local context = describe_context_stack[#describe_context_stack]
   if not context then
-    error('beforeAll() must be called within a describe() block', 2)
+    error('before_all() must be called within a describe() block', 2)
   end
   context.before_all = func
 end
 
 --- Teardown function that runs once after all tests in the current describe block
 -- @param func Teardown function
-local function afterAll(func)
+local function after_all(func)
   local context = describe_context_stack[#describe_context_stack]
   if not context then
-    error('afterAll() must be called within a describe() block', 2)
+    error('after_all() must be called within a describe() block', 2)
   end
   context.after_all = func
 end
 
 --- Global setup function that runs once before all test suites
 -- @param func Setup function
-local function globalBeforeAll(func)
+local function global_before_all(func)
   if type(func) ~= 'function' then
-    error('globalBeforeAll() expects a function, got ' .. type(func), 2)
+    error('global_before_all() expects a function, got ' .. type(func), 2)
   end
   table.insert(global_before_all_hooks, func)
 end
 
 --- Global teardown function that runs once after all test suites
 -- @param func Teardown function
-local function globalAfterAll(func)
+local function global_after_all(func)
   if type(func) ~= 'function' then
-    error('globalAfterAll() expects a function, got ' .. type(func), 2)
+    error('global_after_all() expects a function, got ' .. type(func), 2)
   end
   table.insert(global_after_all_hooks, func)
 end
@@ -680,14 +680,14 @@ return {
   it = it,
   test = test,
   expect = expect,
-  beforeEach = beforeEach,
-  afterEach = afterEach,
-  beforeAll = beforeAll,
-  afterAll = afterAll,
-  globalBeforeAll = globalBeforeAll,
-  globalAfterAll = globalAfterAll,
+  before_each = before_each,
+  after_each = after_each,
+  before_all = before_all,
+  after_all = after_all,
+  global_before_all = global_before_all,
+  global_after_all = global_after_all,
   run_jest_tests = run_jest_tests,
   jest_test_suites = jest_test_suites,
-  jestMatchers = jestMatchers,
+  jest_matchers = jest_matchers,
 }
 

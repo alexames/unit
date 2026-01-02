@@ -6,6 +6,8 @@
 local llx = require 'llx'
 local class = llx.class
 local isinstance = llx.isinstance
+local functional = require 'llx.functional'
+local product = functional.product
 
 local test_index = 0
 

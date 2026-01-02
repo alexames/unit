@@ -6,19 +6,19 @@ _ENV = unit.create_test_env(_ENV)
 local execution_log = {}
 
 describe('BeforeAllAfterAllTests', function()
-  beforeAll(function()
+  before_all(function()
     table.insert(execution_log, 'suite_beforeAll')
   end)
   
-  afterAll(function()
+  after_all(function()
     table.insert(execution_log, 'suite_afterAll')
   end)
   
-  beforeEach(function()
+  before_each(function()
     table.insert(execution_log, 'beforeEach')
   end)
   
-  afterEach(function()
+  after_each(function()
     table.insert(execution_log, 'afterEach')
   end)
   
@@ -54,11 +54,11 @@ describe('BeforeAllAfterAllTests', function()
 end)
 
 describe('NestedBeforeAllAfterAllTests', function()
-  beforeAll(function()
+  before_all(function()
     table.insert(execution_log, 'parent_beforeAll')
   end)
   
-  afterAll(function()
+  after_all(function()
     table.insert(execution_log, 'parent_afterAll')
   end)
   
@@ -67,11 +67,11 @@ describe('NestedBeforeAllAfterAllTests', function()
   end)
   
   describe('NestedSuite', function()
-    beforeAll(function()
+    before_all(function()
       table.insert(execution_log, 'nested_beforeAll')
     end)
     
-    afterAll(function()
+    after_all(function()
       table.insert(execution_log, 'nested_afterAll')
     end)
     
@@ -102,11 +102,11 @@ describe('GlobalBeforeAllAfterAllTests', function()
 end)
 
 -- Set up global hooks
-globalBeforeAll(function()
+global_before_all(function()
   table.insert(execution_log, 'global_beforeAll')
 end)
 
-globalAfterAll(function()
+global_after_all(function()
   table.insert(execution_log, 'global_afterAll')
   -- Verify execution order: global_beforeAll should be first
   expect(execution_log[1]).to.beEqualTo('global_beforeAll')

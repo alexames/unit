@@ -24,7 +24,7 @@ end
 --- Negates a matcher predicate.
 -- @param predicate The matcher to negate
 -- @return A new matcher predicate
-function Not(predicate)
+function negate(predicate)
   return function(actual)
     local result = predicate(actual)
     if type(result) ~= 'table' or result.pass == nil then
@@ -41,7 +41,7 @@ function Not(predicate)
 end
 
 --- Checks equality with expected value.
-function Equals(expected)
+function equals(expected)
   return function(actual)
     return {
       pass = actual == expected,
@@ -54,7 +54,7 @@ function Equals(expected)
 end
 
 --- Checks if actual > expected
-function GreaterThan(expected)
+function greater_than(expected)
   return function(actual)
     return {
       pass = actual > expected,
@@ -67,7 +67,7 @@ function GreaterThan(expected)
 end
 
 --- Checks if actual >= expected
-function GreaterThanOrEqual(expected)
+function greater_than_or_equal(expected)
   return function(actual)
     return {
       pass = actual >= expected,
@@ -80,7 +80,7 @@ function GreaterThanOrEqual(expected)
 end
 
 --- Checks if actual < expected
-function LessThan(expected)
+function less_than(expected)
   return function(actual)
     return {
       pass = actual < expected,
@@ -93,7 +93,7 @@ function LessThan(expected)
 end
 
 --- Checks if actual <= expected
-function LessThanOrEqual(expected)
+function less_than_or_equal(expected)
   return function(actual)
     return {
       pass = actual <= expected,
@@ -106,7 +106,7 @@ function LessThanOrEqual(expected)
 end
 
 --- Checks if actual string starts with expected prefix.
-function StartsWith(expected)
+function starts_with(expected)
   return function(actual)
     return {
       pass = actual:startswith(expected),
@@ -119,7 +119,7 @@ function StartsWith(expected)
 end
 
 --- Checks if actual string ends with expected suffix.
-function EndsWith(expected)
+function ends_with(expected)
   return function(actual)
     return {
       pass = actual:endswith(expected),
@@ -132,7 +132,7 @@ function EndsWith(expected)
 end
 
 --- Checks if actual is of expected type/class.
-function IsOfType(expected)
+function is_of_type(expected)
   return function(actual)
     return {
       pass = isinstance(actual, expected),
@@ -147,7 +147,7 @@ end
 --- Applies a matcher element-wise to two lists.
 -- @param predicate_generator Function producing matchers
 -- @param expected The expected list
-function Listwise(predicate_generator, expected)
+function listwise(predicate_generator, expected)
   return function(actual)
     local result = true
     local msg
@@ -189,7 +189,7 @@ end
 --- Applies a matcher key-wise to two tables.
 -- @param predicate_generator Function producing matchers
 -- @param expected The expected table
-function Tablewise(predicate_generator, expected)
+function tablewise(predicate_generator, expected)
   return function(actual)
     local result = true
     local msg
@@ -215,7 +215,7 @@ function Tablewise(predicate_generator, expected)
 end
 
 --- Checks if value is within epsilon of expected (floating point comparison)
-function Near(expected, epsilon)
+function near(expected, epsilon)
   return function(actual)
     local diff = math.abs(actual - expected)
     return {
@@ -229,7 +229,7 @@ function Near(expected, epsilon)
 end
 
 --- Checks if value is NaN
-function IsNaN()
+function is_nan()
   return function(actual)
     local is_nan = actual ~= actual
     return {
@@ -243,7 +243,7 @@ function IsNaN()
 end
 
 --- Checks if value > 0
-function IsPositive()
+function is_positive()
   return function(actual)
     return {
       pass = actual > 0,
@@ -256,7 +256,7 @@ function IsPositive()
 end
 
 --- Checks if value < 0
-function IsNegative()
+function is_negative()
   return function(actual)
     return {
       pass = actual < 0,
@@ -269,7 +269,7 @@ function IsNegative()
 end
 
 --- Checks if value is between min and max (inclusive)
-function IsBetween(min, max)
+function is_between(min, max)
   return function(actual)
     return {
       pass = actual >= min and actual <= max,
@@ -282,7 +282,7 @@ function IsBetween(min, max)
 end
 
 --- Checks if string contains substring
-function Contains(substring)
+function contains(substring)
   return function(actual)
     local contains = type(actual) == 'string' and actual:find(substring, 1, true) ~= nil
     return {
@@ -296,7 +296,7 @@ function Contains(substring)
 end
 
 --- Checks if string matches pattern
-function Matches(pattern)
+function matches(pattern)
   return function(actual)
     local matches = type(actual) == 'string' and actual:match(pattern) ~= nil
     return {
@@ -310,7 +310,7 @@ function Matches(pattern)
 end
 
 --- Checks if string or collection is empty
-function IsEmpty()
+function is_empty()
   return function(actual)
     local is_empty = false
     if type(actual) == 'string' then
@@ -329,7 +329,7 @@ function IsEmpty()
 end
 
 --- Checks if string has specific length
-function HasLength(n)
+function has_length(n)
   return function(actual)
     local has_length = type(actual) == 'string' and #actual == n
     return {
@@ -343,7 +343,7 @@ function HasLength(n)
 end
 
 --- Checks if collection has specific size
-function HasSize(n)
+function has_size(n)
   return function(actual)
     local size = 0
     if type(actual) == 'table' then
@@ -362,7 +362,7 @@ function HasSize(n)
 end
 
 --- Checks if collection contains element
-function ContainsElement(element)
+function contains_element(element)
   return function(actual)
     local contains = false
     if type(actual) == 'table' then
@@ -384,7 +384,7 @@ function ContainsElement(element)
 end
 
 --- Checks if all matchers pass
-function AllOf(...)
+function all_of(...)
   local matchers = {...}
   return function(actual)
     for _, matcher in ipairs(matchers) do
@@ -413,7 +413,7 @@ function AllOf(...)
 end
 
 --- Checks if any matcher passes
-function AnyOf(...)
+function any_of(...)
   local matchers = {...}
   return function(actual)
     for _, matcher in ipairs(matchers) do
@@ -442,28 +442,28 @@ function AnyOf(...)
 end
 
 return {
-  Not=Not,
-  Equals=Equals,
-  GreaterThan=GreaterThan,
-  GreaterThanOrEqual=GreaterThanOrEqual,
-  LessThan=LessThan,
-  LessThanOrEqual=LessThanOrEqual,
-  StartsWith=StartsWith,
-  EndsWith=EndsWith,
-  IsOfType=IsOfType,
-  Listwise=Listwise,
-  Tablewise=Tablewise,
-  Near=Near,
-  IsNaN=IsNaN,
-  IsPositive=IsPositive,
-  IsNegative=IsNegative,
-  IsBetween=IsBetween,
-  Contains=Contains,
-  Matches=Matches,
-  IsEmpty=IsEmpty,
-  HasLength=HasLength,
-  HasSize=HasSize,
-  ContainsElement=ContainsElement,
-  AllOf=AllOf,
-  AnyOf=AnyOf,
+  negate=negate,
+  equals=equals,
+  greater_than=greater_than,
+  greater_than_or_equal=greater_than_or_equal,
+  less_than=less_than,
+  less_than_or_equal=less_than_or_equal,
+  starts_with=starts_with,
+  ends_with=ends_with,
+  is_of_type=is_of_type,
+  listwise=listwise,
+  tablewise=tablewise,
+  near=near,
+  is_nan=is_nan,
+  is_positive=is_positive,
+  is_negative=is_negative,
+  is_between=is_between,
+  contains=contains,
+  matches=matches,
+  is_empty=is_empty,
+  has_length=has_length,
+  has_size=has_size,
+  contains_element=contains_element,
+  all_of=all_of,
+  any_of=any_of,
 }

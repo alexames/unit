@@ -6,15 +6,27 @@
 -- local expects = require 'unit.expects'
 -- expects.EXPECT_EQ(actual, expected)
 
-require 'unit.matchers'
+local matchers = require 'unit.matchers'
 local truthy, falsey = require 'llx.truthy' {'truthy', 'falsey'}
+
+local equals = matchers.equals
+local negate = matchers.negate
+local less_than = matchers.less_than
+local less_than_or_equal = matchers.less_than_or_equal
+local greater_than = matchers.greater_than
+local greater_than_or_equal = matchers.greater_than_or_equal
+local near = matchers.near
+local contains = matchers.contains
+local matches = matchers.matches
+local is_empty = matchers.is_empty
+local has_size = matchers.has_size
 
 --- Asserts that a value satisfies the given matcher.
 -- @param actual The actual value
--- @param predicate A matcher predicate like Equals or Not
+-- @param predicate A matcher predicate like equals or negate
 -- @param[opt=2] level Stack level for error
 -- @param[opt] s Optional string for description
-function EXPECT_THAT(actual, predicate, level, s)
+function expect_that(actual, predicate, level, s)
   level = level or 2
   local result = predicate(actual, false)
   if type(result) ~= 'table' or result.pass == nil then
@@ -26,97 +38,97 @@ function EXPECT_THAT(actual, predicate, level, s)
 end
 
 --- Asserts that actual == true
-function EXPECT_TRUE(actual, level)
+function expect_true(actual, level)
   level = level or 3
-  EXPECT_THAT(actual, Equals(true), level)
+  expect_that(actual, equals(true), level)
 end
 
 --- Asserts that actual == false
-function EXPECT_FALSE(actual, level)
+function expect_false(actual, level)
   level = level or 3
-  EXPECT_THAT(actual, Equals(false), level)
+  expect_that(actual, equals(false), level)
 end
 
 --- Asserts that actual == expected
-function EXPECT_EQ(actual, expected, level)
+function expect_eq(actual, expected, level)
   level = level or 3
-  EXPECT_THAT(actual, Equals(expected), level)
+  expect_that(actual, equals(expected), level)
 end
 
 --- Asserts that actual ~= expected
-function EXPECT_NE(actual, expected, level)
+function expect_ne(actual, expected, level)
   level = level or 3
-  EXPECT_THAT(actual, Not(Equals(expected)), level)
+  expect_that(actual, negate(equals(expected)), level)
 end
 
 --- Asserts that actual < expected
-function EXPECT_LT(actual, expected, level)
+function expect_lt(actual, expected, level)
   level = level or 3
-  EXPECT_THAT(actual, LessThan(expected), level)
+  expect_that(actual, less_than(expected), level)
 end
 
 --- Asserts that actual <= expected
-function EXPECT_LE(actual, expected, level)
+function expect_le(actual, expected, level)
   level = level or 3
-  EXPECT_THAT(actual, LessThanOrEqual(expected), level)
+  expect_that(actual, less_than_or_equal(expected), level)
 end
 
 --- Asserts that actual > expected
-function EXPECT_GT(actual, expected, level)
+function expect_gt(actual, expected, level)
   level = level or 3
-  EXPECT_THAT(actual, GreaterThan(expected), level)
+  expect_that(actual, greater_than(expected), level)
 end
 
 --- Asserts that actual >= expected
-function EXPECT_GE(actual, expected, level)
+function expect_ge(actual, expected, level)
   level = level or 3
-  EXPECT_THAT(actual, GreaterThanOrEqual(expected), level)
+  expect_that(actual, greater_than_or_equal(expected), level)
 end
 
 --- Asserts that actual is within epsilon of expected
-function EXPECT_NEAR(actual, expected, epsilon, level)
+function expect_near(actual, expected, epsilon, level)
   level = level or 3
-  EXPECT_THAT(actual, Near(expected, epsilon), level)
+  expect_that(actual, near(expected, epsilon), level)
 end
 
 --- Asserts that value is nil
-function EXPECT_NIL(value, level)
+function expect_nil(value, level)
   level = level or 3
-  EXPECT_THAT(value, Equals(nil), level)
+  expect_that(value, equals(nil), level)
 end
 
 --- Asserts that value is not nil
-function EXPECT_NOT_NIL(value, level)
+function expect_not_nil(value, level)
   level = level or 3
-  EXPECT_THAT(value, Not(Equals(nil)), level)
+  expect_that(value, negate(equals(nil)), level)
 end
 
 --- Asserts that string contains substring
-function EXPECT_CONTAINS(str, substring, level)
+function expect_contains(str, substring, level)
   level = level or 3
-  EXPECT_THAT(str, Contains(substring), level)
+  expect_that(str, contains(substring), level)
 end
 
 --- Asserts that string matches pattern
-function EXPECT_MATCHES(str, pattern, level)
+function expect_matches(str, pattern, level)
   level = level or 3
-  EXPECT_THAT(str, Matches(pattern), level)
+  expect_that(str, matches(pattern), level)
 end
 
 --- Asserts that collection is empty
-function EXPECT_EMPTY(collection, level)
+function expect_empty(collection, level)
   level = level or 3
-  EXPECT_THAT(collection, IsEmpty(), level)
+  expect_that(collection, is_empty(), level)
 end
 
 --- Asserts that collection has size n
-function EXPECT_SIZE(collection, n, level)
+function expect_size(collection, n, level)
   level = level or 3
-  EXPECT_THAT(collection, HasSize(n), level)
+  expect_that(collection, has_size(n), level)
 end
 
 --- Asserts that the function does not error when called
-function EXPECT_NO_ERROR(fn, level, ...)
+function expect_no_error(fn, level, ...)
   level = level or 3
   local successful, exception = pcall(fn, ...)
   if not successful then
@@ -125,16 +137,16 @@ function EXPECT_NO_ERROR(fn, level, ...)
 end
 
 --- Asserts that the function errors when called
-function EXPECT_ERROR(fn, expected, level, ...)
+function expect_error(fn, expected, level, ...)
   level = level or 3
   local successful, exception = pcall(fn, ...)
   if expected then
     if type(expected) == 'string' and type(exception) == 'string' then
       local path_colon = exception:find(':', 1, true)
       local line_colon = exception:find(':', path_colon + 1, true)
-      EXPECT_EQ(exception:sub(line_colon + 2), expected, level + 1)
+      expect_eq(exception:sub(line_colon + 2), expected, level + 1)
     else
-      EXPECT_EQ(exception, expected, level + 1)
+      expect_eq(exception, expected, level + 1)
     end
   end
   if successful then
@@ -143,36 +155,36 @@ function EXPECT_ERROR(fn, expected, level, ...)
 end
 
 --- Asserts that the value is truthy
-function EXPECT_TRUTHY(value, level)
+function expect_truthy(value, level)
   level = level or 3
-  EXPECT_TRUE(truthy(value), level)
+  expect_true(truthy(value), level)
 end
 
 --- Asserts that the value is falsey
-function EXPECT_FALSEY(value, level)
+function expect_falsey(value, level)
   level = level or 3
-  EXPECT_TRUE(falsey(value), level)
+  expect_true(falsey(value), level)
 end
 
 return {
-  EXPECT_THAT=EXPECT_THAT,
-  EXPECT_TRUE=EXPECT_TRUE,
-  EXPECT_FALSE=EXPECT_FALSE,
-  EXPECT_EQ=EXPECT_EQ,
-  EXPECT_NE=EXPECT_NE,
-  EXPECT_LT=EXPECT_LT,
-  EXPECT_LE=EXPECT_LE,
-  EXPECT_GT=EXPECT_GT,
-  EXPECT_GE=EXPECT_GE,
-  EXPECT_NEAR=EXPECT_NEAR,
-  EXPECT_NIL=EXPECT_NIL,
-  EXPECT_NOT_NIL=EXPECT_NOT_NIL,
-  EXPECT_CONTAINS=EXPECT_CONTAINS,
-  EXPECT_MATCHES=EXPECT_MATCHES,
-  EXPECT_EMPTY=EXPECT_EMPTY,
-  EXPECT_SIZE=EXPECT_SIZE,
-  EXPECT_NO_ERROR=EXPECT_NO_ERROR,
-  EXPECT_ERROR=EXPECT_ERROR,
-  EXPECT_TRUTHY=EXPECT_TRUTHY,
-  EXPECT_FALSEY=EXPECT_FALSEY,
+  expect_that=expect_that,
+  expect_true=expect_true,
+  expect_false=expect_false,
+  expect_eq=expect_eq,
+  expect_ne=expect_ne,
+  expect_lt=expect_lt,
+  expect_le=expect_le,
+  expect_gt=expect_gt,
+  expect_ge=expect_ge,
+  expect_near=expect_near,
+  expect_nil=expect_nil,
+  expect_not_nil=expect_not_nil,
+  expect_contains=expect_contains,
+  expect_matches=expect_matches,
+  expect_empty=expect_empty,
+  expect_size=expect_size,
+  expect_no_error=expect_no_error,
+  expect_error=expect_error,
+  expect_truthy=expect_truthy,
+  expect_falsey=expect_falsey,
 }
