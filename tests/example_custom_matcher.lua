@@ -31,7 +31,7 @@ describe('CustomMatcherExample', function()
     local success = pcall(function()
       expect(1).to.beEven()
     end)
-    expect(success).to.beEqualTo(false)
+    expect(success).to.be_equal_to(false)
   end)
 
   it('should work with toNot', function()

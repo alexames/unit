@@ -12,8 +12,8 @@ local class = llx.class
 --   local mock = Mock()
 --   mock:mockReturnValue(42)
 --   local result = mock('hello', 'world')
---   expect(mock).to.toHaveBeenCalledTimes(1)
---   expect(mock).to.toHaveBeenCalledWith('hello', 'world')
+--   expect(mock).to.have_been_called_times(1)
+--   expect(mock).to.have_been_called_with('hello', 'world')
 Mock = class 'Mock' {
   --- Constructor
   -- @param default_return_value Optional default return value for all calls

@@ -28,7 +28,7 @@ local global_after_all_hooks = {}
 --- Public table for registering custom matchers.
 -- Users can add their own matchers by assigning to this table.
 -- Matchers should be functions that take arguments and return a matcher function.
--- For example: matchers.beEqualTo = matchers.equals
+-- For example: matchers.be_equal_to = matchers.equals
 local custom_matchers = {}
 
 --- Creates an expect object with matcher methods
@@ -154,22 +154,22 @@ local function expect(actual)
   return expect_obj
 end
 
--- Register all built-in matchers
-custom_matchers.beEqualTo = matchers.equals
-custom_matchers.beGreaterThan = matchers.greater_than
-custom_matchers.beGreaterThanOrEqual = matchers.greater_than_or_equal
-custom_matchers.beLessThan = matchers.less_than
-custom_matchers.beLessThanOrEqual = matchers.less_than_or_equal
+-- Register all built-in matchers (all in snake_case)
+custom_matchers.be_equal_to = matchers.equals
+custom_matchers.be_greater_than = matchers.greater_than
+custom_matchers.be_greater_than_or_equal = matchers.greater_than_or_equal
+custom_matchers.be_less_than = matchers.less_than
+custom_matchers.be_less_than_or_equal = matchers.less_than_or_equal
 custom_matchers.contain = matchers.contains
-custom_matchers.matchPattern = matchers.matches
-custom_matchers.startWith = matchers.starts_with
-custom_matchers.endWith = matchers.ends_with
-custom_matchers.haveLength = matchers.has_length
-custom_matchers.beEmpty = function() return matchers.is_empty() end
-custom_matchers.haveSize = matchers.has_size
-custom_matchers.containElement = matchers.contains_element
-custom_matchers.beNil = function() return matchers.equals(nil) end
-custom_matchers.beTruthy = function()
+custom_matchers.match_pattern = matchers.matches
+custom_matchers.start_with = matchers.starts_with
+custom_matchers.end_with = matchers.ends_with
+custom_matchers.have_length = matchers.has_length
+custom_matchers.be_empty = function() return matchers.is_empty() end
+custom_matchers.have_size = matchers.has_size
+custom_matchers.contain_element = matchers.contains_element
+custom_matchers.be_nil = function() return matchers.equals(nil) end
+custom_matchers.be_truthy = function()
   return function(actual)
     return {
       pass = truthy(actual),
@@ -180,7 +180,7 @@ custom_matchers.beTruthy = function()
     }
   end
 end
-custom_matchers.beFalsy = function()
+custom_matchers.be_falsy = function()
   return function(actual)
     return {
       pass = falsey(actual),
@@ -191,12 +191,12 @@ custom_matchers.beFalsy = function()
     }
   end
 end
-custom_matchers.beNear = matchers.near
-custom_matchers.bePositive = function() return matchers.is_positive() end
-custom_matchers.beNegative = function() return matchers.is_negative() end
-custom_matchers.beBetween = matchers.is_between
-custom_matchers.beNaN = function() return matchers.is_nan() end
-custom_matchers.beOfType = matchers.is_of_type
+custom_matchers.be_near = matchers.near
+custom_matchers.be_positive = function() return matchers.is_positive() end
+custom_matchers.be_negative = function() return matchers.is_negative() end
+custom_matchers.be_between = matchers.is_between
+custom_matchers.be_nan = function() return matchers.is_nan() end
+custom_matchers.be_of_type = matchers.is_of_type
 
 -- Helper to check if value is a Mock instance
 local function is_mock(value)
@@ -257,11 +257,11 @@ local function match_args(actual_args, expected_args)
   return true
 end
 
--- Mock matchers
-custom_matchers.toHaveBeenCalled = function()
+-- Mock matchers (removed 'to' prefix, using snake_case)
+custom_matchers.have_been_called = function()
   return function(actual)
     if not is_mock(actual) then
-      error('toHaveBeenCalled() expects a Mock, got ' .. type(actual), 3)
+      error('have_been_called() expects a Mock, got ' .. type(actual), 3)
     end
     local count = actual:get_call_count()
     return {
@@ -274,10 +274,10 @@ custom_matchers.toHaveBeenCalled = function()
   end
 end
 
-custom_matchers.toHaveBeenCalledTimes = function(expected)
+custom_matchers.have_been_called_times = function(expected)
   return function(actual)
     if not is_mock(actual) then
-      error('toHaveBeenCalledTimes() expects a Mock, got ' .. type(actual), 3)
+      error('have_been_called_times() expects a Mock, got ' .. type(actual), 3)
     end
     local count = actual:get_call_count()
     return {
@@ -290,11 +290,11 @@ custom_matchers.toHaveBeenCalledTimes = function(expected)
   end
 end
 
-custom_matchers.toHaveBeenCalledWith = function(...)
+custom_matchers.have_been_called_with = function(...)
   local expected_args = {...}
   return function(actual)
     if not is_mock(actual) then
-      error('toHaveBeenCalledWith() expects a Mock, got ' .. type(actual), 3)
+      error('have_been_called_with() expects a Mock, got ' .. type(actual), 3)
     end
     local calls = actual:get_calls()
     for _, call in ipairs(calls) do
@@ -318,11 +318,11 @@ custom_matchers.toHaveBeenCalledWith = function(...)
   end
 end
 
-custom_matchers.toHaveBeenLastCalledWith = function(...)
+custom_matchers.have_been_last_called_with = function(...)
   local expected_args = {...}
   return function(actual)
     if not is_mock(actual) then
-      error('toHaveBeenLastCalledWith() expects a Mock, got ' .. type(actual), 3)
+      error('have_been_last_called_with() expects a Mock, got ' .. type(actual), 3)
     end
     local last_call = actual:get_last_call()
     if not last_call then
@@ -345,15 +345,15 @@ custom_matchers.toHaveBeenLastCalledWith = function(...)
   end
 end
 
-custom_matchers.toHaveBeenNthCalledWith = function(n, ...)
+custom_matchers.have_been_nth_called_with = function(n, ...)
   -- Validate n is a positive integer
   if type(n) ~= 'number' or n < 1 or math.floor(n) ~= n then
-    error('toHaveBeenNthCalledWith() expects a positive integer as first argument, got ' .. tostring(n), 3)
+    error('have_been_nth_called_with() expects a positive integer as first argument, got ' .. tostring(n), 3)
   end
   local expected_args = {...}
   return function(actual)
     if not is_mock(actual) then
-      error('toHaveBeenNthCalledWith() expects a Mock, got ' .. type(actual), 3)
+      error('have_been_nth_called_with() expects a Mock, got ' .. type(actual), 3)
     end
     local call = actual:get_call(n)
     if not call then

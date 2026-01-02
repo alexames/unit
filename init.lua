@@ -17,7 +17,7 @@ local matchers = require 'unit.matchers'
 -- local unit = require 'unit'
 -- unit.describe('MyTest', function()
 --   unit.it('should work', function()
---     unit.expect(1 + 1).to.beEqualTo(2)
+--     unit.expect(1 + 1).to.be_equal_to(2)
 --   end)
 -- end)
 local test_env = {

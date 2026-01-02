@@ -24,7 +24,7 @@ describe('BeforeAllAfterAllTests', function()
   
   it('should run beforeAll once before all tests', function()
     table.insert(execution_log, 'test1')
-    expect(execution_log[1]).to.beEqualTo('suite_beforeAll')
+    expect(execution_log[1]).to.be_equal_to('suite_beforeAll')
   end)
   
   it('should run beforeAll only once for multiple tests', function()
@@ -36,7 +36,7 @@ describe('BeforeAllAfterAllTests', function()
         before_all_count = before_all_count + 1
       end
     end
-    expect(before_all_count).to.beEqualTo(1)
+    expect(before_all_count).to.be_equal_to(1)
   end)
   
   it('should run afterAll after all tests complete', function()
@@ -49,7 +49,7 @@ describe('BeforeAllAfterAllTests', function()
         break
       end
     end
-    expect(has_after_all).to.beEqualTo(false)
+    expect(has_after_all).to.be_equal_to(false)
   end)
 end)
 
@@ -87,8 +87,8 @@ describe('NestedBeforeAllAfterAllTests', function()
           has_nested = true
         end
       end
-      expect(has_parent).to.beTruthy()
-      expect(has_nested).to.beTruthy()
+      expect(has_parent).to.be_truthy()
+      expect(has_nested).to.be_truthy()
     end)
   end)
 end)
@@ -97,7 +97,7 @@ describe('GlobalBeforeAllAfterAllTests', function()
   it('should verify global hooks run', function()
     -- This test verifies global hooks are called
     -- The actual verification happens in the global hooks themselves
-    expect(true).to.beTruthy()
+    expect(true).to.be_truthy()
   end)
 end)
 
@@ -109,7 +109,7 @@ end)
 global_after_all(function()
   table.insert(execution_log, 'global_afterAll')
   -- Verify execution order: global_beforeAll should be first
-  expect(execution_log[1]).to.beEqualTo('global_beforeAll')
+  expect(execution_log[1]).to.be_equal_to('global_beforeAll')
 end)
 
 run_unit_tests()
