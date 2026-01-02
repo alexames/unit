@@ -34,9 +34,9 @@ describe('CustomMatcherExample', function()
     expect(success).to.be_equal_to(false)
   end)
 
-  it('should work with toNot', function()
-    expect(1).toNot.beEven()
-    expect(3).toNot.beEven()
+  it('should work with to_not', function()
+    expect(1).to_not.beEven()
+    expect(3).to_not.beEven()
   end)
 end)
 

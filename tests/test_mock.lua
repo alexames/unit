@@ -139,7 +139,7 @@ describe('Mock', function()
 
   it('should support have_been_called matcher', function()
     local mock = Mock()
-    expect(mock).toNot.have_been_called()
+    expect(mock).to_not.have_been_called()
     
     mock()
     expect(mock).to.have_been_called()
@@ -164,15 +164,15 @@ describe('Mock', function()
     
     expect(mock).to.have_been_called_with('hello', 'world')
     expect(mock).to.have_been_called_with('foo')
-    expect(mock).toNot.have_been_called_with('bar')
+    expect(mock).to_not.have_been_called_with('bar')
   end)
 
   it('should support have_been_called_with with matchers', function()
     local mock = Mock()
     mock(42, 'hello world')
     
-    expect(mock).to.have_been_called_with(Equals(42), StartsWith('hello'))
-    expect(mock).to.have_been_called_with(42, Contains('world'))
+    expect(mock).to.have_been_called_with(matchers_module.equals(42), matchers_module.starts_with('hello'))
+    expect(mock).to.have_been_called_with(42, matchers_module.contains('world'))
   end)
 
   it('should support have_been_last_called_with matcher', function()
@@ -182,7 +182,7 @@ describe('Mock', function()
     mock('third')
     
     expect(mock).to.have_been_last_called_with('third')
-    expect(mock).toNot.have_been_last_called_with('first')
+    expect(mock).to_not.have_been_last_called_with('first')
   end)
 
   it('should support have_been_nth_called_with matcher', function()
@@ -194,7 +194,7 @@ describe('Mock', function()
     expect(mock).to.have_been_nth_called_with(1, 'first')
     expect(mock).to.have_been_nth_called_with(2, 'second')
     expect(mock).to.have_been_nth_called_with(3, 'third')
-    expect(mock).toNot.have_been_nth_called_with(1, 'wrong')
+    expect(mock).to_not.have_been_nth_called_with(1, 'wrong')
   end)
 
   it('should support multiple return values', function()
@@ -224,7 +224,7 @@ describe('Mock', function()
       mock(42, 100, 3.14)
       
       expect(mock).to.have_been_called_with(42, 100, 3.14)
-      expect(mock).toNot.have_been_called_with(1, 2, 3)
+      expect(mock).to_not.have_been_called_with(1, 2, 3)
     end)
 
     it('should handle nil arguments in have_been_called_with', function()
@@ -232,7 +232,7 @@ describe('Mock', function()
       mock(nil, 'hello', nil)
       
       expect(mock).to.have_been_called_with(nil, 'hello', nil)
-      expect(mock).toNot.have_been_called_with('hello', nil, 'world')
+      expect(mock).to_not.have_been_called_with('hello', nil, 'world')
     end)
 
     it('should handle matcher functions in have_been_called_with error messages', function()
@@ -240,11 +240,11 @@ describe('Mock', function()
       mock(42, 'hello world')
       
       -- This should work without crashing
-      expect(mock).to.have_been_called_with(Equals(42), StartsWith('hello'))
+      expect(mock).to.have_been_called_with(matchers_module.equals(42), matchers_module.starts_with('hello'))
       
       -- Test error message when it fails
       local success, err = pcall(function()
-        expect(mock).to.have_been_called_with(Equals(99), StartsWith('goodbye'))
+        expect(mock).to.have_been_called_with(matchers_module.equals(99), matchers_module.starts_with('goodbye'))
       end)
       expect(success).to.be_equal_to(false)
       -- Error message should contain '<matcher>' instead of function object
@@ -276,7 +276,7 @@ describe('Mock', function()
       
       -- Test error message when it fails
       local success, err = pcall(function()
-        expect(mock).to.have_been_nth_called_with(1, Equals('wrong'), GreaterThan(100))
+        expect(mock).to.have_been_nth_called_with(1, matchers_module.equals('wrong'), matchers_module.greater_than(100))
       end)
       expect(success).to.be_equal_to(false)
       -- Error message should contain '<matcher>' instead of function object
@@ -290,7 +290,7 @@ describe('Mock', function()
       mock(nil, 'hello', nil)
       
       expect(mock).to.have_been_called_with(nil, 'hello', nil)
-      expect(mock).toNot.have_been_called_with('hello', nil, 'world')
+      expect(mock).to_not.have_been_called_with('hello', nil, 'world')
     end)
 
     it('should correctly distinguish nil from non-nil', function()
@@ -300,9 +300,9 @@ describe('Mock', function()
       -- Should match when nil is in the same position
       expect(mock).to.have_been_called_with('hello', nil, 'world')
       -- Should not match when a non-nil value is in the nil position
-      expect(mock).toNot.have_been_called_with('hello', 'notnil', 'world')
+      expect(mock).to_not.have_been_called_with('hello', 'notnil', 'world')
       -- Should not match when first arg is different
-      expect(mock).toNot.have_been_called_with('goodbye', nil, 'world')
+      expect(mock).to_not.have_been_called_with('goodbye', nil, 'world')
     end)
 
     it('should work with matchers and nil', function()
@@ -310,17 +310,17 @@ describe('Mock', function()
       mock(nil, 42, 'test')
       
       -- Should match when nil and matchers match
-      expect(mock).to.have_been_called_with(nil, Equals(42), StartsWith('te'))
+      expect(mock).to.have_been_called_with(nil, matchers_module.equals(42), matchers_module.starts_with('te'))
       -- Should not match when nil position has a value
-      expect(mock).toNot.have_been_called_with('notnil', Equals(42), StartsWith('te'))
+      expect(mock).to_not.have_been_called_with('notnil', matchers_module.equals(42), matchers_module.starts_with('te'))
       -- Should match when all matchers pass
-      expect(mock).to.have_been_called_with(nil, GreaterThan(40), Contains('te'))
+      expect(mock).to.have_been_called_with(nil, matchers_module.greater_than(40), matchers_module.contains('te'))
       
       -- Test with nil in different positions
       local mock2 = Mock()
       mock2(42, nil, 'test')
-      expect(mock2).to.have_been_called_with(Equals(42), nil, StartsWith('te'))
-      expect(mock2).toNot.have_been_called_with(Equals(99), nil, StartsWith('te'))
+      expect(mock2).to.have_been_called_with(matchers_module.equals(42), nil, matchers_module.starts_with('te'))
+      expect(mock2).to_not.have_been_called_with(matchers_module.equals(99), nil, matchers_module.starts_with('te'))
     end)
   end)
 
@@ -378,11 +378,11 @@ describe('Mock', function()
       
       -- When using matchers, error messages should be readable
       local success, err = pcall(function()
-        expect(mock).to.have_been_called_with(Equals(99), StartsWith('goodbye'))
+        expect(mock).to.have_been_called_with(matchers_module.equals(99), matchers_module.starts_with('goodbye'))
       end)
       expect(success).to.be_equal_to(false)
       -- Should not contain function object representations
-      expect(err).toNot.contain('function:')
+      expect(err).to_not.contain('function:')
       expect(err).to.contain('arguments matching')
     end)
 
@@ -403,7 +403,7 @@ describe('Mock', function()
   end)
 end)
 
-describe('spyOn', function()
+describe('spy_on', function()
   it('should spy on existing object method', function()
     local obj = {
       method = function(x, y)
@@ -411,7 +411,7 @@ describe('spyOn', function()
       end
     }
     
-    local spy = spyOn(obj, 'method')
+    local spy = spy_on(obj, 'method')
     local result = obj.method(2, 3)
     
     expect(result).to.be_equal_to(5) -- Original still works
@@ -428,7 +428,7 @@ describe('spyOn', function()
       end
     }
     
-    local spy = spyOn(obj, 'increment')
+    local spy = spy_on(obj, 'increment')
     obj:increment()
     obj:increment()
     
@@ -443,7 +443,7 @@ describe('spyOn', function()
       end
     }
     
-    local spy = spyOn(obj, 'method')
+    local spy = spy_on(obj, 'method')
     spy:mockReturnValue(999)
     
     expect(obj.method(5)).to.be_equal_to(999) -- Overridden
@@ -459,7 +459,7 @@ describe('spyOn', function()
     }
     
     local original = obj.method
-    local spy = spyOn(obj, 'method')
+    local spy = spy_on(obj, 'method')
     spy:mockReturnValue(999)
     
     expect(obj.method(5)).to.be_equal_to(999)
@@ -472,7 +472,7 @@ describe('spyOn', function()
   it('should throw error when spying on non-existent method', function()
     local obj = {}
     expect(function()
-      spyOn(obj, 'nonexistent')
+      spy_on(obj, 'nonexistent')
     end).to.throw()
   end)
 
@@ -481,7 +481,7 @@ describe('spyOn', function()
       not_a_function = 42
     }
     expect(function()
-      spyOn(obj, 'not_a_function')
+      spy_on(obj, 'not_a_function')
     end).to.throw()
   end)
 end)

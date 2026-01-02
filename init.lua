@@ -24,11 +24,9 @@ local test_env = {
   -- Mocks
   Mock = mock.Mock,
   spy_on = mock.spy_on,
-  spyOn = mock.spy_on,  -- Alias for camelCase compatibility
 
   -- Test registration and execution
   run_unit_tests = runner.run_unit_tests,
-  test_class = runner.test_class,
   Test = test.Test,
   test = test.test,
 
@@ -44,29 +42,9 @@ local test_env = {
   global_after_all = test_api.global_after_all,
   run_tests = test_api.run_tests,
   matchers = test_api.matchers,
-
-  -- Matcher functions (PascalCase for compatibility with test files)
-  Equals = matchers.equals,
-  GreaterThan = matchers.greater_than,
-  GreaterThanOrEqual = matchers.greater_than_or_equal,
-  LessThan = matchers.less_than,
-  LessThanOrEqual = matchers.less_than_or_equal,
-  StartsWith = matchers.starts_with,
-  EndsWith = matchers.ends_with,
-  IsOfType = matchers.is_of_type,
-  Near = matchers.near,
-  IsNaN = matchers.is_nan,
-  IsPositive = matchers.is_positive,
-  IsNegative = matchers.is_negative,
-  IsBetween = matchers.is_between,
-  Contains = matchers.contains,
-  Matches = matchers.matches,
-  IsEmpty = matchers.is_empty,
-  HasLength = matchers.has_length,
-  HasSize = matchers.has_size,
-  ContainsElement = matchers.contains_element,
-  AllOf = matchers.all_of,
-  AnyOf = matchers.any_of,
+  
+  -- Matcher functions module (snake_case)
+  matchers_module = matchers,
 }
 
 local function create_test_env(fallback_env)

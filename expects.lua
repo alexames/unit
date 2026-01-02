@@ -161,8 +161,8 @@ function expect_truthy(value, level)
   expect_true(truthy(value), level)
 end
 
---- Asserts that the value is falsey
-function expect_falsey(value, level)
+--- Asserts that the value is falsy
+function expect_falsy(value, level)
   level = level or 3
   expect_true(falsey(value), level)
 end

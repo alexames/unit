@@ -82,7 +82,7 @@ local Test = class 'Test' {
   -- Handles parameterized tests (not yet implemented)
   run_tests = function(self, printer)
     if not self._initialized then
-      error(string.format('a test_class was not initialized. '
+      error(string.format('a test suite was not initialized. '
                           .. 'Remember to call `self.Test.__init`'),
             3)
     end

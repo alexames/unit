@@ -149,7 +149,6 @@ local function expect(actual)
 
   expect_obj.to = to_proxy
   expect_obj.to_not = to_not_proxy
-  expect_obj.toNot = to_not_proxy  -- Alias for to_not for compatibility
 
   return expect_obj
 end
@@ -443,7 +442,7 @@ local TestSuite = class 'TestSuite':extends(test.Test) {
   -- Override run_tests to add beforeAll/afterAll support
   run_tests = function(self, printer)
     if not self._initialized then
-      error(string.format('a test_class was not initialized. '
+      error(string.format('a test suite was not initialized. '
                           .. 'Remember to call `self.Test.__init`'),
             3)
     end
