@@ -1,4 +1,4 @@
--- Example: Adding a custom matcher to jestMatchers
+-- Example: Adding a custom matcher
 local unit = require 'unit'
 
 _ENV = unit.create_test_env(_ENV)
@@ -15,7 +15,7 @@ local function IsEven()
 end
 
 -- Register the custom matcher
-unit.jestMatchers.beEven = function() return IsEven() end
+unit.matchers.beEven = function() return IsEven() end
 
 -- Now you can use it in tests!
 describe('CustomMatcherExample', function()

@@ -1,13 +1,13 @@
 # Lua Unit Test Framework
 
-A lightweight unit testing framework for Lua, inspired by GoogleTest and GoogleMock from C++.
+A lightweight unit testing framework for Lua with a modern describe/it API.
 
 ## Features
 
-* Google-style test classes and test naming
+* Describe/it test blocks with nested suites
 * Expressive assertions with custom matchers
 * Flexible mocking with call expectations and argument validation
-* Colored terminal output and test logging
+* Colored terminal output and hierarchical test logging
 
 ---
 
@@ -15,25 +15,21 @@ A lightweight unit testing framework for Lua, inspired by GoogleTest and GoogleM
 
 ```lua
 local unit = require 'unit'
-local EXPECT_EQ = unit.EXPECT_EQ
-local Equals = unit.Equals
-local Mock = unit.Mock
-local test_class = unit.test_class
 
--- Define a test class
-unit.test_class 'ExampleTest' {
-  ['simple addition' | test] = function()
-    EXPECT_EQ(2 + 2, 4)
-  end,
+_ENV = unit.create_test_env(_ENV)
 
-  ['mocked function' | test] = function()
-    local mock <close> = Mock()
-    mock:call_count(Equals(1)):call_spec{
-      CallSpec{return_values = {42}}
-    }
-    EXPECT_EQ(mock(), 42)
-  end,
-}
+describe('ExampleTest', function()
+  it('should add numbers correctly', function()
+    expect(2 + 2).to.beEqualTo(4)
+  end)
+
+  it('should work with mocks', function()
+    local mock = Mock()
+    mock:mockReturnValue(42)
+    expect(mock()).to.beEqualTo(42)
+    expect(mock).to.toHaveBeenCalledTimes(1)
+  end)
+end)
 
 -- Run tests
 unit.run_unit_tests()
@@ -43,34 +39,48 @@ unit.run_unit_tests()
 
 ## Assertions
 
-| Function                  | Description               |
-| ------------------------- | ------------------------- |
-| `EXPECT_EQ(a, b)`         | Asserts that `a == b`     |
-| `EXPECT_NE(a, b)`         | Asserts that `a ~= b`     |
-| `EXPECT_TRUE(x)`          | Asserts that `x == true`  |
-| `EXPECT_FALSE(x)`         | Asserts that `x == false` |
-| `EXPECT_THAT(x, matcher)` | Uses a custom matcher     |
+The framework uses an `expect()` API with matchers:
+
+```lua
+expect(actual).to.beEqualTo(expected)
+expect(actual).to.beGreaterThan(value)
+expect(actual).to.contain(substring)
+expect(actual).toNot.beNil()
+```
 
 ---
 
 ## Matchers
 
-| Matcher                  | Description                         |
-| ------------------------ | ----------------------------------- |
-| `Equals(expected)`       | Checks equality                     |
-| `Not(predicate)`         | Negates a matcher                   |
-| `GreaterThan(x)`         | `>` comparison                      |
-| `LessThanOrEqual(x)`     | `<=` comparison                     |
-| `StartsWith(str)`        | For string prefix                   |
-| `IsOfType(type)`         | Checks class/type                   |
-| `Listwise(pred, list)`   | Applies matchers element-wise       |
-| `Tablewise(pred, table)` | Applies matchers to key-value pairs |
+Built-in matchers available via `expect().to.*`:
+
+| Matcher | Description |
+| ------- | ----------- |
+| `beEqualTo(value)` | Checks equality |
+| `beGreaterThan(value)` | `>` comparison |
+| `beLessThan(value)` | `<` comparison |
+| `beGreaterThanOrEqual(value)` | `>=` comparison |
+| `beLessThanOrEqual(value)` | `<=` comparison |
+| `beNear(value, epsilon)` | Floating point comparison |
+| `beNil()` | Checks for nil |
+| `beTruthy()` | Checks if value is truthy |
+| `beFalsy()` | Checks if value is falsy |
+| `contain(substring)` | String contains substring |
+| `matchPattern(pattern)` | String matches pattern |
+| `beEmpty()` | Collection is empty |
+| `haveSize(n)` | Collection has size n |
+| `containElement(element)` | Collection contains element |
+| `beOfType(type)` | Checks class/type |
+| `bePositive()` | Number > 0 |
+| `beNegative()` | Number < 0 |
+| `beBetween(min, max)` | Number in range |
+| `beNaN()` | Checks for NaN |
 
 ---
 
 ## Mocks
 
-Mocks provide flexible call tracking and behavior control, similar to Jest's `jest.fn()`.
+Mocks provide flexible call tracking and behavior control.
 
 ### Basic Usage
 
@@ -128,7 +138,7 @@ expect(mock:get_last_call().args[1]).to.beEqualTo('second')
 expect(mock:get_call(1).args[1]).to.beEqualTo('first')
 ```
 
-### Jest-style Matchers
+### Mock Matchers
 
 ```lua
 local mock = Mock()
@@ -139,9 +149,6 @@ expect(mock).to.toHaveBeenCalledTimes(1)
 expect(mock).to.toHaveBeenCalledWith('hello', 'world')
 expect(mock).to.toHaveBeenLastCalledWith('hello', 'world')
 expect(mock).to.toHaveBeenNthCalledWith(1, 'hello', 'world')
-
--- With matchers
-expect(mock).to.toHaveBeenCalledWith(StartsWith('hello'), Equals('world'))
 ```
 
 ### Spies
@@ -188,17 +195,40 @@ expect(mock()).to.beNil() -- Everything reset
 
 ---
 
-## Test Classes
+## Test Suites
 
-Use `test_class 'Name' { ... }` to define a suite of tests.
-
-Each test case is registered with:
+Use `describe()` and `it()` to define test suites:
 
 ```lua
-['name' | test] = function() ... end
+describe('MySuite', function()
+  before_all(function()
+    -- Runs once before all tests in this suite
+  end)
+  
+  after_all(function()
+    -- Runs once after all tests in this suite
+  end)
+  
+  before_each(function()
+    -- Runs before each test
+  end)
+  
+  after_each(function()
+    -- Runs after each test
+  end)
+  
+  it('should do something', function()
+    expect(true).to.beTruthy()
+  end)
+  
+  -- Nested suites
+  describe('Nested Suite', function()
+    it('should work', function()
+      expect(1 + 1).to.beEqualTo(2)
+    end)
+  end)
+end)
 ```
-
-Chaining `|` and `-` lets you extend test names and pass parameters (future use).
 
 ---
 
@@ -206,7 +236,30 @@ Chaining `|` and `-` lets you extend test names and pass parameters (future use)
 
 ```lua
 unit.run_unit_tests()
-unit.run_unit_tests("MyFilter") -- filters by class name
+unit.run_unit_tests("MyFilter") -- filters by suite name
+```
+
+---
+
+## Custom Matchers
+
+You can add custom matchers:
+
+```lua
+unit.matchers.beEven = function()
+  return function(actual)
+    return {
+      pass = type(actual) == 'number' and actual % 2 == 0,
+      actual = tostring(actual),
+      positive_message = 'be even',
+      negative_message = 'be not even',
+      expected = 'even number'
+    }
+  end
+end
+
+-- Use it
+expect(2).to.beEven()
 ```
 
 ---
@@ -214,12 +267,13 @@ unit.run_unit_tests("MyFilter") -- filters by class name
 ## Output Example
 
 ```
-[==========] Running 2 tests from ExampleTest
-[ Run      ] ExampleTest.simple addition
-[       OK ] ExampleTest.simple addition
-[ Run      ] ExampleTest.mocked function
-[       OK ] ExampleTest.mocked function
-[==========] All 2 tests succeeded!
++ ExampleTest
+  + should add numbers correctly
+  + should work with mocks
+
+Test Suites: 1 passed, 1 total
+Tests:       2 passed, 2 total
++ All tests passed!
 ```
 
 ---

@@ -166,25 +166,9 @@ function expect_falsey(value, level)
   expect_true(falsey(value), level)
 end
 
+-- Internal function used by test_api.lua
+-- Only export expect_that for internal use
 return {
   expect_that=expect_that,
-  expect_true=expect_true,
-  expect_false=expect_false,
-  expect_eq=expect_eq,
-  expect_ne=expect_ne,
-  expect_lt=expect_lt,
-  expect_le=expect_le,
-  expect_gt=expect_gt,
-  expect_ge=expect_ge,
-  expect_near=expect_near,
-  expect_nil=expect_nil,
-  expect_not_nil=expect_not_nil,
-  expect_contains=expect_contains,
-  expect_matches=expect_matches,
-  expect_empty=expect_empty,
-  expect_size=expect_size,
-  expect_no_error=expect_no_error,
-  expect_error=expect_error,
-  expect_truthy=expect_truthy,
-  expect_falsey=expect_falsey,
+  expect_eq=expect_eq,  -- Used internally by test_api.lua
 }

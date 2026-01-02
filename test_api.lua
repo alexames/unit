@@ -1,7 +1,7 @@
--- jest_style.lua
--- Jest-style describe/it/expect API for unit testing
+-- test_api.lua
+-- describe/it/expect API for unit testing
 --
--- @module unit.jest_style
+-- @module unit.test_api
 
 local llx = require 'llx'
 local test = require 'unit.test'
@@ -19,17 +19,17 @@ local product = functional.product
 local describe_context_stack = {}
 
 -- Global test suites registered via describe
-local jest_test_suites = llx.Table{}
+local test_suites = llx.Table{}
 
 -- Global lifecycle hooks
 local global_before_all_hooks = {}
 local global_after_all_hooks = {}
 
---- Public table for registering jest-style matchers.
+--- Public table for registering custom matchers.
 -- Users can add their own matchers by assigning to this table.
 -- Matchers should be functions that take arguments and return a matcher function.
--- For example: jest_matchers.beEqualTo = matchers.equals
-local jest_matchers = {}
+-- For example: matchers.beEqualTo = matchers.equals
+local custom_matchers = {}
 
 --- Creates an expect object with matcher methods
 -- @param actual The actual value to test
@@ -39,7 +39,7 @@ local function expect(actual)
     _actual = actual,
   }
 
-  -- Helper to create a matcher method from a jestMatcher entry
+  -- Helper to create a matcher method from a matcher entry
   local function create_matcher_method(matcher_creator, negated)
     if type(matcher_creator) ~= 'function' then
       return nil
@@ -54,7 +54,7 @@ local function expect(actual)
     end
   end
 
-  -- Create proxies that dynamically look up matchers from jestMatchers
+  -- Create proxies that dynamically look up matchers from custom_matchers
   local to_proxy = {}
   setmetatable(to_proxy, {
     __index = function(_, key)
@@ -99,8 +99,8 @@ local function expect(actual)
           expects.expect_that(expect_obj._actual, matchers.any_of(...), 3)
         end
       else
-        -- Look up in jest_matchers
-        local matcher_creator = jest_matchers[key]
+        -- Look up in custom_matchers
+        local matcher_creator = custom_matchers[key]
         if matcher_creator then
           return create_matcher_method(matcher_creator, false)
         end
@@ -137,8 +137,8 @@ local function expect(actual)
           expects.expect_that(expect_obj._actual, matchers.negate(matchers.any_of(...)), 3)
         end
       else
-        -- Look up in jest_matchers
-        local matcher_creator = jest_matchers[key]
+        -- Look up in custom_matchers
+        local matcher_creator = custom_matchers[key]
         if matcher_creator then
           return create_matcher_method(matcher_creator, true)
         end
@@ -154,21 +154,21 @@ local function expect(actual)
 end
 
 -- Register all built-in matchers
-jest_matchers.beEqualTo = matchers.equals
-jest_matchers.beGreaterThan = matchers.greater_than
-jest_matchers.beGreaterThanOrEqual = matchers.greater_than_or_equal
-jest_matchers.beLessThan = matchers.less_than
-jest_matchers.beLessThanOrEqual = matchers.less_than_or_equal
-jest_matchers.contain = matchers.contains
-jest_matchers.matchPattern = matchers.matches
-jest_matchers.startWith = matchers.starts_with
-jest_matchers.endWith = matchers.ends_with
-jest_matchers.haveLength = matchers.has_length
-jest_matchers.beEmpty = function() return matchers.is_empty() end
-jest_matchers.haveSize = matchers.has_size
-jest_matchers.containElement = matchers.contains_element
-jest_matchers.beNil = function() return matchers.equals(nil) end
-jest_matchers.beTruthy = function()
+custom_matchers.beEqualTo = matchers.equals
+custom_matchers.beGreaterThan = matchers.greater_than
+custom_matchers.beGreaterThanOrEqual = matchers.greater_than_or_equal
+custom_matchers.beLessThan = matchers.less_than
+custom_matchers.beLessThanOrEqual = matchers.less_than_or_equal
+custom_matchers.contain = matchers.contains
+custom_matchers.matchPattern = matchers.matches
+custom_matchers.startWith = matchers.starts_with
+custom_matchers.endWith = matchers.ends_with
+custom_matchers.haveLength = matchers.has_length
+custom_matchers.beEmpty = function() return matchers.is_empty() end
+custom_matchers.haveSize = matchers.has_size
+custom_matchers.containElement = matchers.contains_element
+custom_matchers.beNil = function() return matchers.equals(nil) end
+custom_matchers.beTruthy = function()
   return function(actual)
     return {
       pass = truthy(actual),
@@ -179,7 +179,7 @@ jest_matchers.beTruthy = function()
     }
   end
 end
-jest_matchers.beFalsy = function()
+custom_matchers.beFalsy = function()
   return function(actual)
     return {
       pass = falsey(actual),
@@ -190,12 +190,12 @@ jest_matchers.beFalsy = function()
     }
   end
 end
-jest_matchers.beNear = matchers.near
-jest_matchers.bePositive = function() return matchers.is_positive() end
-jest_matchers.beNegative = function() return matchers.is_negative() end
-jest_matchers.beBetween = matchers.is_between
-jest_matchers.beNaN = function() return matchers.is_nan() end
-jest_matchers.beOfType = matchers.is_of_type
+custom_matchers.beNear = matchers.near
+custom_matchers.bePositive = function() return matchers.is_positive() end
+custom_matchers.beNegative = function() return matchers.is_negative() end
+custom_matchers.beBetween = matchers.is_between
+custom_matchers.beNaN = function() return matchers.is_nan() end
+custom_matchers.beOfType = matchers.is_of_type
 
 -- Helper to check if value is a Mock instance
 local function is_mock(value)
@@ -230,7 +230,7 @@ local function match_args(actual_args, expected_args)
 end
 
 -- Mock matchers
-jest_matchers.toHaveBeenCalled = function()
+custom_matchers.toHaveBeenCalled = function()
   return function(actual)
     if not is_mock(actual) then
       error('toHaveBeenCalled() expects a Mock, got ' .. type(actual), 3)
@@ -246,7 +246,7 @@ jest_matchers.toHaveBeenCalled = function()
   end
 end
 
-jest_matchers.toHaveBeenCalledTimes = function(expected)
+custom_matchers.toHaveBeenCalledTimes = function(expected)
   return function(actual)
     if not is_mock(actual) then
       error('toHaveBeenCalledTimes() expects a Mock, got ' .. type(actual), 3)
@@ -262,7 +262,7 @@ jest_matchers.toHaveBeenCalledTimes = function(expected)
   end
 end
 
-jest_matchers.toHaveBeenCalledWith = function(...)
+custom_matchers.toHaveBeenCalledWith = function(...)
   local expected_args = {...}
   return function(actual)
     if not is_mock(actual) then
@@ -290,7 +290,7 @@ jest_matchers.toHaveBeenCalledWith = function(...)
   end
 end
 
-jest_matchers.toHaveBeenLastCalledWith = function(...)
+custom_matchers.toHaveBeenLastCalledWith = function(...)
   local expected_args = {...}
   return function(actual)
     if not is_mock(actual) then
@@ -317,7 +317,7 @@ jest_matchers.toHaveBeenLastCalledWith = function(...)
   end
 end
 
-jest_matchers.toHaveBeenNthCalledWith = function(n, ...)
+custom_matchers.toHaveBeenNthCalledWith = function(n, ...)
   local expected_args = {...}
   return function(actual)
     if not is_mock(actual) then
@@ -344,16 +344,16 @@ jest_matchers.toHaveBeenNthCalledWith = function(n, ...)
   end
 end
 
--- Special matchers that need custom handling (not registered in jest_matchers)
+-- Special matchers that need custom handling (not registered in custom_matchers)
 -- These are handled directly in the proxy __index functions
 
---- Test class for Jest-style tests
-local JestTestSuite = class 'JestTestSuite':extends(test.Test) {
+--- Test class for describe/it style tests
+local TestSuite = class 'TestSuite':extends(test.Test) {
   __init = function(self, suite_name, tests, nested_suite_classes, name_path)
     test.Test.__init(self)
     self._name = suite_name
     self._name_path = name_path or {suite_name}
-    self._jest_tests = tests
+    self._tests_data = tests
     self._nested_suite_classes = nested_suite_classes or {}
     self._before_all_run = false
     -- Instantiate nested suites
@@ -361,21 +361,21 @@ local JestTestSuite = class 'JestTestSuite':extends(test.Test) {
     for _, nested_class in ipairs(self._nested_suite_classes) do
       local nested_instance = nested_class(
         nested_class.__name,
-        nested_class.__jest_tests,
-        nested_class.__jest_nested_suites or {},
-        nested_class.__jest_name_path or {nested_class.__name}
+        nested_class.__tests_data,
+        nested_class.__nested_suites or {},
+        nested_class.__name_path or {nested_class.__name}
       )
       table.insert(self._nested_suites, nested_instance)
     end
-    self._tests = self:gather_jest_tests()
+    self._tests = self:gather_tests()
   end,
 
-  gather_jest_tests = function(self)
+  gather_tests = function(self)
     local result = llx.Table()
     local test_index = 1
     
     -- Add direct tests from this suite
-    for i, test_case in ipairs(self._jest_tests) do
+    for i, test_case in ipairs(self._tests_data) do
       result:insert({
         index = test_index,
         name = test_case.name_path or {test_case.name},
@@ -387,7 +387,7 @@ local JestTestSuite = class 'JestTestSuite':extends(test.Test) {
     
     -- Recursively add tests from nested suites
     for _, nested_suite in ipairs(self._nested_suites) do
-      local nested_tests = nested_suite:gather_jest_tests()
+      local nested_tests = nested_suite:gather_tests()
       for _, nested_test in ipairs(nested_tests) do
         result:insert({
           index = test_index,
@@ -416,7 +416,7 @@ local JestTestSuite = class 'JestTestSuite':extends(test.Test) {
     end
     
     -- Run beforeAll hook once before all tests
-    local before_all = getmetatable(self).__jest_before_all
+    local before_all = getmetatable(self).__before_all
     if before_all and before_all ~= llx.noop and not self._before_all_run then
       local success, err = pcall(before_all)
       if not success then
@@ -440,7 +440,7 @@ local JestTestSuite = class 'JestTestSuite':extends(test.Test) {
         if test_suite ~= self then
           -- This is a nested suite test, run its beforeAll if not already run
           if not suite_before_all_run[test_suite] then
-            local nested_before_all = getmetatable(test_suite).__jest_before_all
+            local nested_before_all = getmetatable(test_suite).__before_all
             if nested_before_all and nested_before_all ~= llx.noop then
               pcall(nested_before_all)
               suite_before_all_run[test_suite] = true
@@ -470,7 +470,7 @@ local JestTestSuite = class 'JestTestSuite':extends(test.Test) {
       suites_to_cleanup[suite] = true
     end
     for suite, _ in pairs(suites_to_cleanup) do
-      local after_all = getmetatable(suite).__jest_after_all
+      local after_all = getmetatable(suite).__after_all
       if after_all and after_all ~= llx.noop then
         pcall(after_all)
       end
@@ -544,20 +544,20 @@ local function describe(name, func)
   end
 
   -- Create a test class for this suite
-  local suite_class = class(table.concat(name_path, '_')):extends(JestTestSuite) {
+  local suite_class = class(table.concat(name_path, '_')):extends(TestSuite) {
     __init = function(self, suite_name, tests, nested_suites, name_path)
-      JestTestSuite.__init(self, suite_name, tests, nested_suites, name_path)
+      TestSuite.__init(self, suite_name, tests, nested_suites, name_path)
     end,
   }
   
   -- Store the test data for later instantiation
-  suite_class.__jest_tests = context.tests
-  suite_class.__jest_nested_suites = context.nested_suites
-  suite_class.__jest_name_path = context.name_path
-  suite_class.__jest_setup = context.setup
-  suite_class.__jest_teardown = context.teardown
-  suite_class.__jest_before_all = context.before_all
-  suite_class.__jest_after_all = context.after_all
+  suite_class.__tests_data = context.tests
+  suite_class.__nested_suites = context.nested_suites
+  suite_class.__name_path = context.name_path
+  suite_class.__setup = context.setup
+  suite_class.__teardown = context.teardown
+  suite_class.__before_all = context.before_all
+  suite_class.__after_all = context.after_all
   
   -- Override setup/teardown if provided
   if context.setup ~= llx.noop then
@@ -572,7 +572,7 @@ local function describe(name, func)
   if parent_context then
     table.insert(parent_context.nested_suites, suite_class)
   else
-    jest_test_suites:insert(suite_class)
+    test_suites:insert(suite_class)
   end
 end
 
@@ -634,12 +634,12 @@ local function global_after_all(func)
   table.insert(global_after_all_hooks, func)
 end
 
---- Runs all Jest-style tests
+--- Runs all tests registered via describe/it
 -- @param[opt] filter A string to match against test suite names
 -- @param[opt] logger An optional logger object to capture output
-local function run_jest_tests(filter, logger)
+local function run_tests(filter, logger)
   local test_logger = require 'unit.test_logger'
-  logger = logger or test_logger.JestLogger()
+  logger = logger or test_logger.HierarchicalLogger()
   local total_failure_count = 0
   local total_test_count = 0
 
@@ -652,13 +652,13 @@ local function run_jest_tests(filter, logger)
   end
 
   logger.prelude()
-  for _, cls in ipairs(jest_test_suites) do
+  for _, cls in ipairs(test_suites) do
     if not filter or cls.__name:match(filter) then
       local test_object = cls(
         cls.__name,
-        cls.__jest_tests,
-        cls.__jest_nested_suites or {},
-        cls.__jest_name_path or {cls.__name}
+        cls.__tests_data,
+        cls.__nested_suites or {},
+        cls.__name_path or {cls.__name}
       )
       local failed_tests, tests_ran = test_object:run_tests(logger)
       total_failure_count = total_failure_count + failed_tests
@@ -686,8 +686,8 @@ return {
   after_all = after_all,
   global_before_all = global_before_all,
   global_after_all = global_after_all,
-  run_jest_tests = run_jest_tests,
-  jest_test_suites = jest_test_suites,
-  jest_matchers = jest_matchers,
+  run_tests = run_tests,
+  test_suites = test_suites,
+  matchers = custom_matchers,
 }
 

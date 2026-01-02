@@ -73,8 +73,8 @@ TestLogger = class 'TestLogger' {
   end;
 }
 
--- Module-level variable to store the current JestLogger instance
-local current_jest_logger = nil
+-- Module-level variable to store the current HierarchicalLogger instance
+local current_hierarchical_logger = nil
 
 --- Builds a hierarchical tree structure from test name paths
 -- @param tests List of tests with name_path arrays
@@ -182,15 +182,15 @@ local function print_tree(items, indent)
   end
 end
 
---- Jest-style logger for displaying test results.
-JestLogger = class 'JestLogger' {
+--- Hierarchical logger for displaying test results with nested describe blocks.
+HierarchicalLogger = class 'HierarchicalLogger' {
   __init = function(self)
     self.test_suites = {}
     self.current_suite = nil
     self.total_passed = 0
     self.total_failed = 0
     self.total_tests = 0
-    current_jest_logger = self
+    current_hierarchical_logger = self
   end;
 
   --- Called once before any tests run.
@@ -199,8 +199,8 @@ JestLogger = class 'JestLogger' {
   --- Prints the beginning of a test class.
   -- @param test_suite The test class object
   class_preamble = function(test_suite)
-    if not current_jest_logger then
-      error('JestLogger instance not found')
+    if not current_hierarchical_logger then
+      error('HierarchicalLogger instance not found')
     end
     -- Get nested suites if available
     local nested_suites = {}
@@ -209,7 +209,7 @@ JestLogger = class 'JestLogger' {
         table.insert(nested_suites, nested)
       end
     end
-    current_jest_logger.current_suite = {
+    current_hierarchical_logger.current_suite = {
       name = test_suite:name(),
       name_path = test_suite._name_path or {test_suite:name()},
       tests = {},
@@ -217,18 +217,18 @@ JestLogger = class 'JestLogger' {
       passed = 0,
       failed = 0,
     }
-    table.insert(current_jest_logger.test_suites, current_jest_logger.current_suite)
+    table.insert(current_hierarchical_logger.test_suites, current_hierarchical_logger.current_suite)
   end;
 
   --- Prints the beginning of a single test.
   test_begin = function(test_suite, test_name)
-    -- Jest doesn't print test begin, we'll print it in test_end
+    -- Hierarchical logger doesn't print test begin, we'll print it in test_end
   end;
 
   --- Prints the result of a test case.
   test_end = function(test_suite, test_name, successful, err)
-    if not current_jest_logger then
-      error('JestLogger instance not found')
+    if not current_hierarchical_logger then
+      error('HierarchicalLogger instance not found')
     end
     -- test_name is already a path array, store it as-is
     local test_info = {
@@ -237,16 +237,16 @@ JestLogger = class 'JestLogger' {
       passed = successful,
       error = err,
     }
-    table.insert(current_jest_logger.current_suite.tests, test_info)
+    table.insert(current_hierarchical_logger.current_suite.tests, test_info)
     
     if successful then
-      current_jest_logger.current_suite.passed = current_jest_logger.current_suite.passed + 1
-      current_jest_logger.total_passed = current_jest_logger.total_passed + 1
+      current_hierarchical_logger.current_suite.passed = current_hierarchical_logger.current_suite.passed + 1
+      current_hierarchical_logger.total_passed = current_hierarchical_logger.total_passed + 1
     else
-      current_jest_logger.current_suite.failed = current_jest_logger.current_suite.failed + 1
-      current_jest_logger.total_failed = current_jest_logger.total_failed + 1
+      current_hierarchical_logger.current_suite.failed = current_hierarchical_logger.current_suite.failed + 1
+      current_hierarchical_logger.total_failed = current_hierarchical_logger.total_failed + 1
     end
-    current_jest_logger.total_tests = current_jest_logger.total_tests + 1
+    current_hierarchical_logger.total_tests = current_hierarchical_logger.total_tests + 1
   end;
 
   --- Prints summary of the test class.
@@ -258,12 +258,12 @@ JestLogger = class 'JestLogger' {
 
   --- Prints final global test results.
   finale = function(total_failure_count, total_test_count)
-    if not current_jest_logger then
-      error('JestLogger instance not found')
+    if not current_hierarchical_logger then
+      error('HierarchicalLogger instance not found')
     end
     
     -- Print each test suite hierarchically
-    for _, suite in ipairs(current_jest_logger.test_suites) do
+    for _, suite in ipairs(current_hierarchical_logger.test_suites) do
       -- Get the suite's base name (last element of name_path)
       local suite_name = suite.name_path[#suite.name_path]
       local suite_color = suite.failed > 0 and red or green
@@ -285,10 +285,10 @@ JestLogger = class 'JestLogger' {
     local all_passed = total_failure_count == 0
     local summary_color = all_passed and green or red
     
-    local suite_count = #current_jest_logger.test_suites
+    local suite_count = #current_hierarchical_logger.test_suites
     local passed_suites = 0
     local failed_suites = 0
-    for _, suite in ipairs(current_jest_logger.test_suites) do
+    for _, suite in ipairs(current_hierarchical_logger.test_suites) do
       if suite.failed == 0 then
         passed_suites = passed_suites + 1
       else
@@ -321,5 +321,5 @@ JestLogger = class 'JestLogger' {
 
 return {
   TestLogger = TestLogger,
-  JestLogger = JestLogger,
+  HierarchicalLogger = HierarchicalLogger,
 }
