@@ -6,11 +6,13 @@ _ENV = unit.create_test_env(_ENV)
 -- Example: Create a custom matcher that checks if a number is even
 local function IsEven()
   return function(actual)
-    return type(actual) == 'number' and actual % 2 == 0,
-           tostring(actual),
-           'be even',
-           'be not even',
-           'even number'
+    return {
+      pass = type(actual) == 'number' and actual % 2 == 0,
+      actual = tostring(actual),
+      positive_message = 'be even',
+      negative_message = 'be not even',
+      expected = 'even number'
+    }
   end
 end
 

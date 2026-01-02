@@ -11,391 +11,391 @@ test_class 'ExpectationTest' {
   end,
 
   [test 'expect_equality'] = function(self)
-    EXPECT_EQ(nil, nil)
+    expect(nil).to.beEqualTo(nil)
 
-    EXPECT_EQ(true, true)
-    EXPECT_EQ(false, false)
-    EXPECT_EQ(self.test_boolean, true)
+    expect(true).to.beEqualTo(true)
+    expect(false).to.beEqualTo(false)
+    expect(self.test_boolean).to.beEqualTo(true)
 
-    EXPECT_EQ(100, 100)
-    EXPECT_EQ(100, self.test_integer)
+    expect(100).to.beEqualTo(100)
+    expect(100).to.beEqualTo(self.test_integer)
     
-    EXPECT_EQ('Hello, world!', 'Hello, world!')
-    EXPECT_EQ('Hello, world!', self.test_string)
+    expect('Hello, world!').to.beEqualTo('Hello, world!')
+    expect('Hello, world!').to.beEqualTo(self.test_string)
 
-    -- Expect that the EXPECT_EQ test fails in these cases.
-    EXPECT_ERROR(function()
-      EXPECT_EQ(nil, 1)
-    end)
-    EXPECT_ERROR(function()
-      EXPECT_EQ(true, false)
-    end)
-    EXPECT_ERROR(function()
-      EXPECT_EQ(100, 0)
-    end)
-    EXPECT_ERROR(function()
-      EXPECT_EQ('Hello, world!', 'Goodbye, world!')
-    end)
+    -- Expect that the expect().to.beEqualTo() test fails in these cases.
+    expect(function()
+      expect(nil).to.beEqualTo(1)
+    end).to.throw()
+    expect(function()
+      expect(true).to.beEqualTo(false)
+    end).to.throw()
+    expect(function()
+      expect(100).to.beEqualTo(0)
+    end).to.throw()
+    expect(function()
+      expect('Hello, world!').to.beEqualTo('Goodbye, world!')
+    end).to.throw()
   end,
 
   [test 'expect_inequality'] = function(self)
-    EXPECT_NE(nil, 1)
+    expect(nil).toNot.beEqualTo(1)
 
-    EXPECT_NE(true, false)
-    EXPECT_NE(false, true)
-    EXPECT_NE(self.test_boolean, false)
+    expect(true).toNot.beEqualTo(false)
+    expect(false).toNot.beEqualTo(true)
+    expect(self.test_boolean).toNot.beEqualTo(false)
 
-    EXPECT_NE(0, 100)
-    EXPECT_NE(0, self.test_integer)
+    expect(0).toNot.beEqualTo(100)
+    expect(0).toNot.beEqualTo(self.test_integer)
     
-    EXPECT_NE('Goodbyte, world!', 'Hello, world!')
-    EXPECT_NE('Goodbyte, world!', self.test_string)
+    expect('Goodbyte, world!').toNot.beEqualTo('Hello, world!')
+    expect('Goodbyte, world!').toNot.beEqualTo(self.test_string)
 
-    -- Expect that the EXPECT_NE test fails in these cases.
-    EXPECT_ERROR(function()
-      EXPECT_NE(nil, nil)
-    end)
-    EXPECT_ERROR(function()
-      EXPECT_NE(true, true)
-    end)
-    EXPECT_ERROR(function()
-      EXPECT_NE(100, 100)
-    end)
-    EXPECT_ERROR(function()
-      EXPECT_NE('Hello, world!', 'Hello, world!')
-    end)
+    -- Expect that the expect().toNot.beEqualTo() test fails in these cases.
+    expect(function()
+      expect(nil).toNot.beEqualTo(nil)
+    end).to.throw()
+    expect(function()
+      expect(true).toNot.beEqualTo(true)
+    end).to.throw()
+    expect(function()
+      expect(100).toNot.beEqualTo(100)
+    end).to.throw()
+    expect(function()
+      expect('Hello, world!').toNot.beEqualTo('Hello, world!')
+    end).to.throw()
   end,
 
   [test 'expect_true'] = function(self)
-    EXPECT_TRUE(true)
+    expect(true).to.beEqualTo(true)
     
-    -- Expect that the EXPECT_NE test fail in this case.
-    EXPECT_ERROR(function()
-      EXPECT_TRUE(false)
-    end)
-    EXPECT_ERROR(function()
-      EXPECT_TRUE(1)
-    end)
+    -- Expect that the expect().to.beEqualTo() test fail in this case.
+    expect(function()
+      expect(false).to.beEqualTo(true)
+    end).to.throw()
+    expect(function()
+      expect(1).to.beEqualTo(true)
+    end).to.throw()
   end,
 
   [test 'expect_false'] = function(self)
-    EXPECT_FALSE(false)
+    expect(false).to.beEqualTo(false)
     
-    -- Expect that the EXPECT_NE test fail in this case.
-    EXPECT_ERROR(function()
-      EXPECT_FALSE(true)
-    end)
-    EXPECT_ERROR(function()
-      EXPECT_FALSE(nil)
-    end)
+    -- Expect that the expect().to.beEqualTo() test fail in this case.
+    expect(function()
+      expect(true).to.beEqualTo(false)
+    end).to.throw()
+    expect(function()
+      expect(nil).to.beEqualTo(false)
+    end).to.throw()
   end,
 
   [test 'expect_truthy'] = function(self)
-    EXPECT_TRUTHY(true)
-    EXPECT_TRUTHY(1)
+    expect(true).to.beTruthy()
+    expect(1).to.beTruthy()
     
-    -- Expect that the EXPECT_NE test fail in this case.
-    EXPECT_ERROR(function()
-      EXPECT_TRUTHY(false)
-    end)
-    EXPECT_ERROR(function()
-      EXPECT_TRUTHY(nil)
-    end)
+    -- Expect that the expect().to.beTruthy() test fail in this case.
+    expect(function()
+      expect(false).to.beTruthy()
+    end).to.throw()
+    expect(function()
+      expect(nil).to.beTruthy()
+    end).to.throw()
   end,
 
   [test 'expect_falsey'] = function(self)
-    EXPECT_FALSEY(false)
-    EXPECT_FALSEY(nil)
+    expect(false).to.beFalsy()
+    expect(nil).to.beFalsy()
     
-    -- Expect that the EXPECT_NE test fail in this case.
-    EXPECT_ERROR(function()
-      EXPECT_FALSEY(true)
-    end)
-    EXPECT_ERROR(function()
-      EXPECT_FALSEY(1)
-    end)
+    -- Expect that the expect().to.beFalsy() test fail in this case.
+    expect(function()
+      expect(true).to.beFalsy()
+    end).to.throw()
+    expect(function()
+      expect(1).to.beFalsy()
+    end).to.throw()
   end,
 
   [test 'expect_error'] = function(self)
-    EXPECT_ERROR(function()
+    expect(function()
        error('error!')
-    end, 'error!')
+    end).to.throw('error!')
 
-    EXPECT_ERROR(function()
+    expect(function()
        error('error!')
-    end)
+    end).to.throw()
   end,
 
   [test 'expect_error_no_error'] = function(self)
-    -- Verify that when a function passed to EXPECT_ERROR fails to raise the
-    -- correct error the EXPECT_ERROR function fails correctly.
+    -- Verify that when a function passed to expect().to.throw() fails to raise the
+    -- correct error the expect().to.throw() function fails correctly.
     local successful, exception = pcall(function()
-      EXPECT_ERROR(function() end)
+      expect(function() end).to.throw()
     end)
-    EXPECT_FALSE(successful)
+    expect(successful).to.beEqualTo(false)
 
     -- Just check the suffix, since error messages are prefixed with a file and
     -- line number.
-    EXPECT_THAT(exception, EndsWith 'expected function to raise error')
+    expect(exception).to.match(EndsWith('expected function to raise error'))
   end,
 
   [test 'expect_error_wrong_error'] = function(self)
-    -- Verify that when a function passed to EXPECT_ERROR fails to raise the
-    -- correct error the EXPECT_ERROR function fails correctly.
+    -- Verify that when a function passed to expect().to.throw() fails to raise the
+    -- correct error the expect().to.throw() function fails correctly.
     local successful, exception = pcall(function()
-      EXPECT_ERROR(function()
+      expect(function()
        error('actual error message!')
-      end, 'expected error message!')
+      end).to.throw('expected error message!')
     end)
-    EXPECT_FALSE(successful)
+    expect(successful).to.beEqualTo(false)
 
     -- Just check the suffix, since error messages are prefixed with a file and
     -- line number.
-    EXPECT_THAT(exception, EndsWith [[
+    expect(exception).to.match(EndsWith([[
 expected 
   actual error message!
 to be equal to
-  expected error message!]])
+  expected error message!]]))
   end,
 }
 
 test_class 'NumericAssertionTests' {
   [test 'EXPECT_LT passes when less than'] = function()
-    EXPECT_LT(5, 10)
-    EXPECT_LT(-1, 0)
+    expect(5).to.beLessThan(10)
+    expect(-1).to.beLessThan(0)
   end,
 
   [test 'EXPECT_LE passes when less than or equal'] = function()
-    EXPECT_LE(5, 10)
-    EXPECT_LE(10, 10)
+    expect(5).to.beLessThanOrEqual(10)
+    expect(10).to.beLessThanOrEqual(10)
   end,
 
   [test 'EXPECT_GT passes when greater than'] = function()
-    EXPECT_GT(10, 5)
-    EXPECT_GT(0, -1)
+    expect(10).to.beGreaterThan(5)
+    expect(0).to.beGreaterThan(-1)
   end,
 
   [test 'EXPECT_GE passes when greater than or equal'] = function()
-    EXPECT_GE(10, 5)
-    EXPECT_GE(10, 10)
+    expect(10).to.beGreaterThanOrEqual(5)
+    expect(10).to.beGreaterThanOrEqual(10)
   end,
 
   [test 'EXPECT_NEAR passes for close values'] = function()
-    EXPECT_NEAR(1.0, 1.001, 0.01)
-    EXPECT_NEAR(100.0, 100.005, 0.01)
+    expect(1.0).to.beNear(1.001, 0.01)
+    expect(100.0).to.beNear(100.005, 0.01)
   end,
 
   [test 'EXPECT_NEAR fails for distant values'] = function()
     local success = pcall(function()
-      EXPECT_NEAR(1.0, 2.0, 0.1)
+      expect(1.0).to.beNear(2.0, 0.1)
     end)
-    EXPECT_FALSE(success)
+    expect(success).to.beEqualTo(false)
   end,
 }
 
 test_class 'NilAssertionTests' {
   [test 'EXPECT_NIL passes for nil'] = function()
-    EXPECT_NIL(nil)
+    expect(nil).to.beNil()
     local x
-    EXPECT_NIL(x)
+    expect(x).to.beNil()
   end,
 
   [test 'EXPECT_NIL fails for non-nil'] = function()
     local success = pcall(function()
-      EXPECT_NIL(5)
+      expect(5).to.beNil()
     end)
-    EXPECT_FALSE(success)
+    expect(success).to.beEqualTo(false)
   end,
 
   [test 'EXPECT_NOT_NIL passes for non-nil'] = function()
-    EXPECT_NOT_NIL(5)
-    EXPECT_NOT_NIL(0)
-    EXPECT_NOT_NIL(false)
-    EXPECT_NOT_NIL("")
+    expect(5).toNot.beNil()
+    expect(0).toNot.beNil()
+    expect(false).toNot.beNil()
+    expect("").toNot.beNil()
   end,
 
   [test 'EXPECT_NOT_NIL fails for nil'] = function()
     local success = pcall(function()
-      EXPECT_NOT_NIL(nil)
+      expect(nil).toNot.beNil()
     end)
-    EXPECT_FALSE(success)
+    expect(success).to.beEqualTo(false)
   end,
 }
 
 test_class 'StringAssertionTests' {
   [test 'EXPECT_CONTAINS passes when substring present'] = function()
-    EXPECT_CONTAINS("hello world", "world")
-    EXPECT_CONTAINS("test", "es")
+    expect("hello world").to.contain("world")
+    expect("test").to.contain("es")
   end,
 
   [test 'EXPECT_CONTAINS fails when substring absent'] = function()
     local success = pcall(function()
-      EXPECT_CONTAINS("hello", "xyz")
+      expect("hello").to.contain("xyz")
     end)
-    EXPECT_FALSE(success)
+    expect(success).to.beEqualTo(false)
   end,
 
   [test 'EXPECT_MATCHES passes for pattern match'] = function()
-    EXPECT_MATCHES("hello123", "%d+")
-    EXPECT_MATCHES("test@example.com", "@")
+    expect("hello123").to.matchPattern("%d+")
+    expect("test@example.com").to.matchPattern("@")
   end,
 
   [test 'EXPECT_MATCHES fails for no match'] = function()
     local success = pcall(function()
-      EXPECT_MATCHES("hello", "%d+")
+      expect("hello").to.matchPattern("%d+")
     end)
-    EXPECT_FALSE(success)
+    expect(success).to.beEqualTo(false)
   end,
 }
 
 test_class 'CollectionAssertionTests' {
   [test 'EXPECT_EMPTY passes for empty table'] = function()
-    EXPECT_EMPTY({})
+    expect({}).to.beEmpty()
   end,
 
   [test 'EXPECT_EMPTY passes for empty string'] = function()
-    EXPECT_EMPTY("")
+    expect("").to.beEmpty()
   end,
 
   [test 'EXPECT_EMPTY fails for non-empty'] = function()
     local success = pcall(function()
-      EXPECT_EMPTY({1, 2, 3})
+      expect({1, 2, 3}).to.beEmpty()
     end)
-    EXPECT_FALSE(success)
+    expect(success).to.beEqualTo(false)
   end,
 
   [test 'EXPECT_SIZE passes for correct size'] = function()
-    EXPECT_SIZE({1, 2, 3}, 3)
-    EXPECT_SIZE({a=1, b=2}, 2)
+    expect({1, 2, 3}).to.haveSize(3)
+    expect({a=1, b=2}).to.haveSize(2)
   end,
 
   [test 'EXPECT_SIZE fails for wrong size'] = function()
     local success = pcall(function()
-      EXPECT_SIZE({1, 2}, 5)
+      expect({1, 2}).to.haveSize(5)
     end)
-    EXPECT_FALSE(success)
+    expect(success).to.beEqualTo(false)
   end,
 }
 
 test_class 'ErrorAssertionTests' {
   [test 'EXPECT_ERROR passes when function errors'] = function()
-    EXPECT_ERROR(function()
+    expect(function()
       error("test error")
-    end)
+    end).to.throw()
   end,
 
   [test 'EXPECT_ERROR fails when function succeeds'] = function()
     local success = pcall(function()
-      EXPECT_ERROR(function()
+      expect(function()
         return 42
-      end)
+      end).to.throw()
     end)
-    EXPECT_FALSE(success)
+    expect(success).to.beEqualTo(false)
   end,
 
   [test 'EXPECT_NO_ERROR passes when function succeeds'] = function()
-    EXPECT_NO_ERROR(function()
+    expect(function()
       return 42
-    end)
+    end).toNot.throw()
   end,
 
   [test 'EXPECT_NO_ERROR fails when function errors'] = function()
     local success = pcall(function()
-      EXPECT_NO_ERROR(function()
+      expect(function()
         error("oops")
-      end)
+      end).toNot.throw()
     end)
-    EXPECT_FALSE(success)
+    expect(success).to.beEqualTo(false)
   end,
 }
 
 test_class 'NumericMatcherTests' {
   [test 'Near matcher'] = function()
-    EXPECT_THAT(1.0, Near(1.001, 0.01))
-    EXPECT_THAT(100.0, Near(100.005, 0.01))
+    expect(1.0).to.match(Near(1.001, 0.01))
+    expect(100.0).to.match(Near(100.005, 0.01))
   end,
 
   [test 'IsPositive matcher'] = function()
-    EXPECT_THAT(5, IsPositive())
-    EXPECT_THAT(0.1, IsPositive())
+    expect(5).to.match(IsPositive())
+    expect(0.1).to.match(IsPositive())
   end,
 
   [test 'IsNegative matcher'] = function()
-    EXPECT_THAT(-5, IsNegative())
-    EXPECT_THAT(-0.1, IsNegative())
+    expect(-5).to.match(IsNegative())
+    expect(-0.1).to.match(IsNegative())
   end,
 
   [test 'IsBetween matcher'] = function()
-    EXPECT_THAT(5, IsBetween(1, 10))
-    EXPECT_THAT(1, IsBetween(1, 10))
-    EXPECT_THAT(10, IsBetween(1, 10))
+    expect(5).to.match(IsBetween(1, 10))
+    expect(1).to.match(IsBetween(1, 10))
+    expect(10).to.match(IsBetween(1, 10))
   end,
 
   [test 'IsNaN matcher'] = function()
     local nan = 0/0
-    EXPECT_THAT(nan, IsNaN())
+    expect(nan).to.match(IsNaN())
   end,
 }
 
 test_class 'StringMatcherTests' {
   [test 'Contains matcher'] = function()
-    EXPECT_THAT("hello world", Contains("world"))
-    EXPECT_THAT("test", Contains("es"))
+    expect("hello world").to.match(Contains("world"))
+    expect("test").to.match(Contains("es"))
   end,
 
   [test 'Matches matcher'] = function()
-    EXPECT_THAT("hello123", Matches("%d+"))
-    EXPECT_THAT("test@example.com", Matches("@"))
+    expect("hello123").to.match(Matches("%d+"))
+    expect("test@example.com").to.match(Matches("@"))
   end,
 
   [test 'IsEmpty matcher for strings'] = function()
-    EXPECT_THAT("", IsEmpty())
+    expect("").to.match(IsEmpty())
   end,
 
   [test 'HasLength matcher'] = function()
-    EXPECT_THAT("hello", HasLength(5))
-    EXPECT_THAT("", HasLength(0))
+    expect("hello").to.match(HasLength(5))
+    expect("").to.match(HasLength(0))
   end,
 }
 
 test_class 'CollectionMatcherTests' {
   [test 'IsEmpty matcher for tables'] = function()
-    EXPECT_THAT({}, IsEmpty())
+    expect({}).to.match(IsEmpty())
   end,
 
   [test 'HasSize matcher'] = function()
-    EXPECT_THAT({1, 2, 3}, HasSize(3))
-    EXPECT_THAT({a=1, b=2}, HasSize(2))
+    expect({1, 2, 3}).to.match(HasSize(3))
+    expect({a=1, b=2}).to.match(HasSize(2))
   end,
 
   [test 'ContainsElement matcher'] = function()
-    EXPECT_THAT({1, 2, 3}, ContainsElement(2))
-    EXPECT_THAT({"a", "b", "c"}, ContainsElement("b"))
+    expect({1, 2, 3}).to.match(ContainsElement(2))
+    expect({"a", "b", "c"}).to.match(ContainsElement("b"))
   end,
 }
 
 test_class 'CompositeMatcherTests' {
   [test 'AllOf matcher passes when all match'] = function()
-    EXPECT_THAT(5, AllOf(GreaterThan(0), LessThan(10)))
+    expect(5).to.match(AllOf(GreaterThan(0), LessThan(10)))
   end,
 
   [test 'AllOf matcher fails when one fails'] = function()
     local success = pcall(function()
-      EXPECT_THAT(15, AllOf(GreaterThan(0), LessThan(10)))
+      expect(15).to.match(AllOf(GreaterThan(0), LessThan(10)))
     end)
-    EXPECT_FALSE(success)
+    expect(success).to.beEqualTo(false)
   end,
 
   [test 'AnyOf matcher passes when one matches'] = function()
-    EXPECT_THAT(5, AnyOf(Equals(5), Equals(10)))
-    EXPECT_THAT(10, AnyOf(Equals(5), Equals(10)))
+    expect(5).to.match(AnyOf(Equals(5), Equals(10)))
+    expect(10).to.match(AnyOf(Equals(5), Equals(10)))
   end,
 
   [test 'AnyOf matcher fails when none match'] = function()
     local success = pcall(function()
-      EXPECT_THAT(7, AnyOf(Equals(5), Equals(10)))
+      expect(7).to.match(AnyOf(Equals(5), Equals(10)))
     end)
-    EXPECT_FALSE(success)
+    expect(success).to.beEqualTo(false)
   end,
 }
 
@@ -403,27 +403,27 @@ test_class 'CompositeMatcherTests' {
 test_class 'ErrorLevelTests' {
   [test 'EXPECT_EQ error points to test code'] = function()
     local success, err = pcall(function()
-      EXPECT_EQ(1, 2)  -- Error should point to THIS line
+      expect(1).to.beEqualTo(2)  -- Error should point to THIS line
     end)
-    EXPECT_FALSE(success)
+    expect(success).to.beEqualTo(false)
     -- Error message should contain this file and line number
-    EXPECT_TRUE(type(err) == 'string')
+    expect(type(err)).to.beEqualTo('string')
   end,
 
   [test 'EXPECT_LT error points to test code'] = function()
     local success, err = pcall(function()
-      EXPECT_LT(10, 5)  -- Error should point to THIS line
+      expect(10).to.beLessThan(5)  -- Error should point to THIS line
     end)
-    EXPECT_FALSE(success)
-    EXPECT_TRUE(type(err) == 'string')
+    expect(success).to.beEqualTo(false)
+    expect(type(err)).to.beEqualTo('string')
   end,
 
   [test 'EXPECT_NEAR error points to test code'] = function()
     local success, err = pcall(function()
-      EXPECT_NEAR(1.0, 10.0, 0.1)  -- Error should point to THIS line
+      expect(1.0).to.beNear(10.0, 0.1)  -- Error should point to THIS line
     end)
-    EXPECT_FALSE(success)
-    EXPECT_TRUE(type(err) == 'string')
+    expect(success).to.beEqualTo(false)
+    expect(type(err)).to.beEqualTo('string')
   end,
 }
 

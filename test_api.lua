@@ -149,6 +149,7 @@ local function expect(actual)
 
   expect_obj.to = to_proxy
   expect_obj.to_not = to_not_proxy
+  expect_obj.toNot = to_not_proxy  -- Alias for to_not for compatibility
 
   return expect_obj
 end
@@ -350,13 +351,13 @@ end
 --- Test class for describe/it style tests
 local TestSuite = class 'TestSuite':extends(test.Test) {
   __init = function(self, suite_name, tests, nested_suite_classes, name_path)
-    test.Test.__init(self)
+    -- Set test data before calling base __init, which calls gather_tests()
     self._name = suite_name
     self._name_path = name_path or {suite_name}
-    self._tests_data = tests
+    self._tests_data = tests or {}
     self._nested_suite_classes = nested_suite_classes or {}
     self._before_all_run = false
-    -- Instantiate nested suites
+    -- Initialize nested suites before base __init calls gather_tests()
     self._nested_suites = {}
     for _, nested_class in ipairs(self._nested_suite_classes) do
       local nested_instance = nested_class(
@@ -367,7 +368,8 @@ local TestSuite = class 'TestSuite':extends(test.Test) {
       )
       table.insert(self._nested_suites, nested_instance)
     end
-    self._tests = self:gather_tests()
+    -- Now call base __init which will call our overridden gather_tests()
+    test.Test.__init(self)
   end,
 
   gather_tests = function(self)
