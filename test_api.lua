@@ -5,7 +5,6 @@
 
 local llx = require 'llx'
 local test = require 'unit.test'
-local expects = require 'unit.expects'
 local matchers = require 'unit.matchers'
 local mock_module = require 'unit.mock'
 local truthy, falsey = require 'llx.truthy' {'truthy', 'falsey'}
@@ -14,6 +13,18 @@ local functional = require 'llx.functional'
 local class = llx.class
 local Mock = mock_module.Mock
 local product = functional.product
+
+-- Helper function to evaluate a matcher and throw an error if it doesn't pass
+local function evaluate_matcher(actual, matcher, level)
+  level = level or 3
+  local result = matcher(actual)
+  if type(result) ~= 'table' or result.pass == nil then
+    error('Matcher must return a table with pass, actual, positive_message, negative_message, and expected fields', level)
+  end
+  if not result.pass then
+    error('expected ' .. result.actual .. '\nto ' .. result.positive_message .. '\n  ' .. result.expected, level)
+  end
+end
 
 -- Context stack for nested describe blocks
 local describe_context_stack = {}
@@ -50,7 +61,7 @@ local function expect(actual)
       if negated then
         matcher = matchers.negate(matcher)
       end
-      expects.expect_that(expect_obj._actual, matcher, 3)
+      evaluate_matcher(expect_obj._actual, matcher, 3)
     end
   end
 
@@ -70,17 +81,15 @@ local function expect(actual)
           
           -- Expect function to throw
           if expected then
+            local exception_msg = exception
             if type(expected) == 'string' and type(exception) == 'string' then
               local path_colon = exception:find(':', 1, true)
               local line_colon = exception:find(':', path_colon + 1, true)
               if line_colon then
-                expects.expect_eq(exception:sub(line_colon + 2), expected, level + 1)
-              else
-                expects.expect_eq(exception, expected, level + 1)
+                exception_msg = exception:sub(line_colon + 2)
               end
-            else
-              expects.expect_eq(exception, expected, level + 1)
             end
+            evaluate_matcher(exception_msg, matchers.equals(expected), level + 1)
           end
           if successful then
             error('expected function to raise error', level)
@@ -88,15 +97,15 @@ local function expect(actual)
         end
       elseif key == 'match' then
         return function(matcher_func)
-          expects.expect_that(expect_obj._actual, matcher_func, 3)
+          evaluate_matcher(expect_obj._actual, matcher_func, 3)
         end
       elseif key == 'satisfy' then
         return function(...)
-          expects.expect_that(expect_obj._actual, matchers.all_of(...), 3)
+          evaluate_matcher(expect_obj._actual, matchers.all_of(...), 3)
         end
       elseif key == 'satisfy_any' then
         return function(...)
-          expects.expect_that(expect_obj._actual, matchers.any_of(...), 3)
+          evaluate_matcher(expect_obj._actual, matchers.any_of(...), 3)
         end
       else
         -- Look up in custom_matchers
@@ -126,15 +135,15 @@ local function expect(actual)
         end
       elseif key == 'match' then
         return function(matcher_func)
-          expects.expect_that(expect_obj._actual, matchers.negate(matcher_func), 3)
+          evaluate_matcher(expect_obj._actual, matchers.negate(matcher_func), 3)
         end
       elseif key == 'satisfy' then
         return function(...)
-          expects.expect_that(expect_obj._actual, matchers.negate(matchers.all_of(...)), 3)
+          evaluate_matcher(expect_obj._actual, matchers.negate(matchers.all_of(...)), 3)
         end
       elseif key == 'satisfy_any' then
         return function(...)
-          expects.expect_that(expect_obj._actual, matchers.negate(matchers.any_of(...)), 3)
+          evaluate_matcher(expect_obj._actual, matchers.negate(matchers.any_of(...)), 3)
         end
       else
         -- Look up in custom_matchers
