@@ -11,6 +11,8 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     
     steps:
     - name: Checkout repository
@@ -23,13 +25,19 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y lua5.4 liblua5.4-dev
     
-    - name: Clone dependencies
-      run: |
-        git clone https://github.com/alexames/llx.git llx
+    - name: Checkout llx dependency
+      uses: actions/checkout@v4
+      with:
+        repository: alexames/llx
+        path: llx
+        token: ${{ secrets.REPO_ACCESS_TOKEN }}
     
     - name: Set up Lua package path
       run: |
-        echo "LUA_PATH=$GITHUB_WORKSPACE/unit/?.lua;$GITHUB_WORKSPACE/llx/?.lua;;" >> $GITHUB_ENV
+        export LUA_PATH="$GITHUB_WORKSPACE/?.lua;$GITHUB_WORKSPACE/?/init.lua;;"
+        export LUA_PATH_5_4="$GITHUB_WORKSPACE/?.lua;$GITHUB_WORKSPACE/?/init.lua;;"
+        echo "LUA_PATH=$LUA_PATH" >> $GITHUB_ENV
+        echo "LUA_PATH_5_4=$LUA_PATH_5_4" >> $GITHUB_ENV
     
     - name: Run all tests
       working-directory: unit/tests
