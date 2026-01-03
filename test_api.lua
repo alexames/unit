@@ -199,6 +199,28 @@ custom_matchers.be_falsy = function()
     }
   end
 end
+custom_matchers.be_true = function()
+  return function(actual)
+    return {
+      pass = actual == true,
+      actual = tostring(actual),
+      positive_message = 'be true',
+      negative_message = 'be not true',
+      expected = 'true'
+    }
+  end
+end
+custom_matchers.be_false = function()
+  return function(actual)
+    return {
+      pass = actual == false,
+      actual = tostring(actual),
+      positive_message = 'be false',
+      negative_message = 'be not false',
+      expected = 'false'
+    }
+  end
+end
 custom_matchers.be_near = matchers.near
 custom_matchers.be_positive = function() return matchers.is_positive() end
 custom_matchers.be_negative = function() return matchers.is_negative() end
