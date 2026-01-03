@@ -450,6 +450,258 @@ function any_of(...)
   end
 end
 
+--- Checks if none of the matchers pass
+function none_of(...)
+  local matchers = {...}
+  return function(actual)
+    for _, matcher in ipairs(matchers) do
+      local result = matcher(actual)
+      if type(result) ~= 'table' or result.pass == nil then
+        error('Matcher must return a table with pass, actual, positive_message, negative_message, and expected fields', 2)
+      end
+      if result.pass then
+        return {
+          pass = false,
+          actual = tostring(actual),
+          positive_message = 'match none of the conditions',
+          negative_message = 'match at least one condition',
+          expected = 'no matchers'
+        }
+      end
+    end
+    return {
+      pass = true,
+      actual = tostring(actual),
+      positive_message = 'match none of the conditions',
+      negative_message = 'match at least one condition',
+      expected = 'no matchers'
+    }
+  end
+end
+
+--- Checks if value is an instance of a class
+function is_instance_of(expected_class)
+  return function(actual)
+    -- Try to use isinstance if available
+    local isinstance_func = llx and llx.isinstance
+    if isinstance_func then
+      local is_instance = isinstance_func(actual, expected_class)
+      return {
+        pass = is_instance,
+        actual = tostring(actual),
+        positive_message = 'be instance of',
+        negative_message = 'not be instance of',
+        expected = tostring(expected_class)
+      }
+    end
+
+    -- Fallback: check metatable
+    local mt = getmetatable(actual)
+    local is_instance = mt == expected_class or (mt and mt.__isinstance and mt:__isinstance(actual))
+    return {
+      pass = is_instance,
+      actual = tostring(actual),
+      positive_message = 'be instance of',
+      negative_message = 'not be instance of',
+      expected = tostring(expected_class)
+    }
+  end
+end
+
+--- Deep equality check for tables
+local function deep_equals(a, b, visited)
+  if a == b then return true end
+  if type(a) ~= type(b) then return false end
+  if type(a) ~= 'table' then return false end
+
+  visited = visited or {}
+  if visited[a] then return visited[a] == b end
+  visited[a] = b
+
+  -- Check all keys in a
+  for k, v in pairs(a) do
+    if not deep_equals(v, b[k], visited) then
+      return false
+    end
+  end
+
+  -- Check for extra keys in b
+  for k in pairs(b) do
+    if a[k] == nil then
+      return false
+    end
+  end
+
+  return true
+end
+
+--- Checks if table deeply equals expected
+function match_table(expected)
+  return function(actual)
+    if type(actual) ~= 'table' then
+      return {
+        pass = false,
+        actual = tostring(actual) .. ' (type: ' .. type(actual) .. ')',
+        positive_message = 'deeply equal',
+        negative_message = 'not deeply equal',
+        expected = table_to_string(expected)
+      }
+    end
+
+    local is_equal = deep_equals(actual, expected)
+    return {
+      pass = is_equal,
+      actual = table_to_string(actual),
+      positive_message = 'deeply equal',
+      negative_message = 'not deeply equal',
+      expected = table_to_string(expected)
+    }
+  end
+end
+
+--- Checks if object has a property with specific value
+function have_property(key, expected_value)
+  return function(actual)
+    if type(actual) ~= 'table' then
+      return {
+        pass = false,
+        actual = tostring(actual) .. ' (type: ' .. type(actual) .. ')',
+        positive_message = 'have property',
+        negative_message = 'not have property',
+        expected = string.format('%s = %s', tostring(key), tostring(expected_value))
+      }
+    end
+
+    local has_key = actual[key] ~= nil
+    local value_matches = expected_value == nil or actual[key] == expected_value
+
+    return {
+      pass = has_key and value_matches,
+      actual = has_key and string.format('%s = %s', tostring(key), tostring(actual[key])) or 'property not found',
+      positive_message = 'have property',
+      negative_message = 'not have property',
+      expected = expected_value and string.format('%s = %s', tostring(key), tostring(expected_value)) or tostring(key)
+    }
+  end
+end
+
+--- Checks if object has a method (callable)
+function respond_to(method_name)
+  return function(actual)
+    if type(actual) ~= 'table' then
+      return {
+        pass = false,
+        actual = tostring(actual) .. ' (type: ' .. type(actual) .. ')',
+        positive_message = 'respond to',
+        negative_message = 'not respond to',
+        expected = 'method: ' .. tostring(method_name)
+      }
+    end
+
+    local method = actual[method_name]
+    local is_callable = type(method) == 'function' or (type(method) == 'table' and getmetatable(method) and getmetatable(method).__call)
+
+    return {
+      pass = is_callable,
+      actual = method and string.format('has %s (%s)', tostring(method_name), type(method)) or 'method not found',
+      positive_message = 'respond to',
+      negative_message = 'not respond to',
+      expected = 'callable method: ' .. tostring(method_name)
+    }
+  end
+end
+
+--- Checks if value is of a specific type
+function be_a(type_name)
+  return function(actual)
+    local actual_type = type(actual)
+    return {
+      pass = actual_type == type_name,
+      actual = actual_type,
+      positive_message = 'be of type',
+      negative_message = 'not be of type',
+      expected = type_name
+    }
+  end
+end
+
+--- Checks if table has all specified keys
+function have_keys(...)
+  local expected_keys = {...}
+  return function(actual)
+    if type(actual) ~= 'table' then
+      return {
+        pass = false,
+        actual = tostring(actual) .. ' (type: ' .. type(actual) .. ')',
+        positive_message = 'have keys',
+        negative_message = 'not have keys',
+        expected = table.concat(expected_keys, ', ')
+      }
+    end
+
+    local missing_keys = {}
+    for _, key in ipairs(expected_keys) do
+      if actual[key] == nil then
+        table.insert(missing_keys, tostring(key))
+      end
+    end
+
+    return {
+      pass = #missing_keys == 0,
+      actual = #missing_keys > 0 and 'missing: ' .. table.concat(missing_keys, ', ') or 'has all keys',
+      positive_message = 'have keys',
+      negative_message = 'not have keys',
+      expected = table.concat(expected_keys, ', ')
+    }
+  end
+end
+
+--- Checks if number is even
+function be_even()
+  return function(actual)
+    if type(actual) ~= 'number' then
+      return {
+        pass = false,
+        actual = tostring(actual) .. ' (type: ' .. type(actual) .. ')',
+        positive_message = 'be even',
+        negative_message = 'be odd',
+        expected = 'even number'
+      }
+    end
+
+    return {
+      pass = actual % 2 == 0,
+      actual = tostring(actual),
+      positive_message = 'be even',
+      negative_message = 'be odd',
+      expected = 'even number'
+    }
+  end
+end
+
+--- Checks if number is odd
+function be_odd()
+  return function(actual)
+    if type(actual) ~= 'number' then
+      return {
+        pass = false,
+        actual = tostring(actual) .. ' (type: ' .. type(actual) .. ')',
+        positive_message = 'be odd',
+        negative_message = 'be even',
+        expected = 'odd number'
+      }
+    end
+
+    return {
+      pass = actual % 2 ~= 0,
+      actual = tostring(actual),
+      positive_message = 'be odd',
+      negative_message = 'be even',
+      expected = 'odd number'
+    }
+  end
+end
+
 return {
   negate=negate,
   equals=equals,
@@ -475,4 +727,13 @@ return {
   contains_element=contains_element,
   all_of=all_of,
   any_of=any_of,
+  none_of=none_of,
+  is_instance_of=is_instance_of,
+  match_table=match_table,
+  have_property=have_property,
+  respond_to=respond_to,
+  be_a=be_a,
+  have_keys=have_keys,
+  be_even=be_even,
+  be_odd=be_odd,
 }

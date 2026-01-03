@@ -10,7 +10,7 @@ local class = llx.class
 -- Tracks all calls, allows flexible return values and implementations.
 -- Example usage:
 --   local mock = Mock()
---   mock:mockReturnValue(42)
+--   mock:mock_return_value(42)
 --   local result = mock('hello', 'world')
 --   expect(mock).to.have_been_called_times(1)
 --   expect(mock).to.have_been_called_with('hello', 'world')
@@ -35,7 +35,7 @@ Mock = class 'Mock' {
   --- Set a default return value for all calls
   -- @param ...values Values to return (supports multiple return values)
   -- @return self for chaining
-  mockReturnValue = function(self, ...)
+  mock_return_value = function(self, ...)
     self._default_return_value = {...}
     -- Clear default implementation when setting return value
     -- This allows return values to override implementations (useful for spies)
@@ -46,7 +46,7 @@ Mock = class 'Mock' {
   --- Set a return value for the next call only
   -- @param ...values Values to return (supports multiple return values)
   -- @return self for chaining
-  mockReturnValueOnce = function(self, ...)
+  mock_return_value_once = function(self, ...)
     table.insert(self._return_value_queue, {...})
     -- Note: We don't clear default_implementation here because
     -- the queue takes priority anyway, and we want to preserve
@@ -57,9 +57,9 @@ Mock = class 'Mock' {
   --- Set a default implementation function for all calls
   -- @param func Function to call when mock is invoked
   -- @return self for chaining
-  mockImplementation = function(self, func)
+  mock_implementation = function(self, func)
     if type(func) ~= 'function' then
-      error('mockImplementation expects a function, got ' .. type(func), 2)
+      error('mock_implementation expects a function, got ' .. type(func), 2)
     end
     self._default_implementation = func
     return self
@@ -68,9 +68,9 @@ Mock = class 'Mock' {
   --- Set an implementation function for the next call only
   -- @param func Function to call when mock is invoked
   -- @return self for chaining
-  mockImplementationOnce = function(self, func)
+  mock_implementation_once = function(self, func)
     if type(func) ~= 'function' then
-      error('mockImplementationOnce expects a function, got ' .. type(func), 2)
+      error('mock_implementation_once expects a function, got ' .. type(func), 2)
     end
     table.insert(self._implementation_queue, func)
     return self
@@ -78,7 +78,7 @@ Mock = class 'Mock' {
 
   --- Clear call history but keep implementation and return values
   -- @return self for chaining
-  mockClear = function(self)
+  mock_clear = function(self)
     self._call_history = {}
     self._call_count = 0
     return self
@@ -86,7 +86,7 @@ Mock = class 'Mock' {
 
   --- Reset mock to initial state (clears everything)
   -- @return self for chaining
-  mockReset = function(self)
+  mock_reset = function(self)
     self._call_history = {}
     self._call_count = 0
     self._default_implementation = nil
@@ -99,8 +99,34 @@ Mock = class 'Mock' {
   --- Set a name for the mock (for better error messages)
   -- @param name String name for the mock
   -- @return self for chaining
-  mockName = function(self, name)
+  mock_name = function(self, name)
     self._name = name
+    return self
+  end;
+
+  --- Set a sequence of return values (one per call)
+  -- @param values Table of values to return in sequence
+  -- @return self for chaining
+  mock_return_value_sequence = function(self, values)
+    for _, value in ipairs(values) do
+      table.insert(self._return_value_queue, type(value) == 'table' and value or {value})
+    end
+    return self
+  end;
+
+  --- Clear old call history, keeping only the last n calls
+  -- @param keep_last_n Number of recent calls to keep
+  -- @return self for chaining
+  mock_clear_old_calls = function(self, keep_last_n)
+    local history_len = #self._call_history
+    if history_len > keep_last_n then
+      local new_history = {}
+      for i = history_len - keep_last_n + 1, history_len do
+        table.insert(new_history, self._call_history[i])
+      end
+      self._call_history = new_history
+      self._call_count = keep_last_n
+    end
     return self
   end;
 
@@ -198,16 +224,16 @@ local function spy_on(object, method_name)
   end
   
   -- Add restore method
-  spy.mockRestore = function(self)
+  spy.mock_restore = function(self)
     if self._original then
       self._object[self._method_name] = self._original
       self._original = nil
     end
     return self
   end
-  
+
   -- Set default implementation to call original
-  spy:mockImplementation(function(...)
+  spy:mock_implementation(function(...)
     return original(...)
   end)
   

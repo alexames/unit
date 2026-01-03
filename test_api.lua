@@ -228,6 +228,17 @@ custom_matchers.be_between = matchers.is_between
 custom_matchers.be_nan = function() return matchers.is_nan() end
 custom_matchers.be_of_type = matchers.is_of_type
 
+-- New matchers
+custom_matchers.be_instance_of = matchers.is_instance_of
+custom_matchers.match_table = matchers.match_table
+custom_matchers.have_property = matchers.have_property
+custom_matchers.respond_to = matchers.respond_to
+custom_matchers.be_a = matchers.be_a
+custom_matchers.have_keys = matchers.have_keys
+custom_matchers.be_even = matchers.be_even
+custom_matchers.be_odd = matchers.be_odd
+custom_matchers.none_of = matchers.none_of
+
 -- Helper to check if value is a Mock instance
 local function is_mock(value)
   return type(value) == 'table' and getmetatable(value) == Mock
@@ -436,18 +447,37 @@ local TestSuite = class 'TestSuite':extends(test.Test) {
   gather_tests = function(self)
     local result = llx.Table()
     local test_index = 1
-    
+    local has_only = false
+
+    -- First pass: check if any tests have 'only' flag
+    for _, test_case in ipairs(self._tests_data) do
+      if test_case.only then
+        has_only = true
+        break
+      end
+    end
+
     -- Add direct tests from this suite
     for i, test_case in ipairs(self._tests_data) do
-      result:insert({
-        index = test_index,
-        name = test_case.name_path or {test_case.name},
-        func = test_case.func,
-        suite = self  -- Track which suite this test belongs to
-      })
-      test_index = test_index + 1
+      -- Skip tests marked as skip
+      if test_case.skip then
+        -- Don't add to result
+      -- If there are 'only' tests, only include those
+      elseif has_only and not test_case.only then
+        -- Don't add to result
+      else
+        result:insert({
+          index = test_index,
+          name = test_case.name_path or {test_case.name},
+          func = test_case.func,
+          suite = self,  -- Track which suite this test belongs to
+          skip = test_case.skip,
+          only = test_case.only
+        })
+        test_index = test_index + 1
+      end
     end
-    
+
     -- Recursively add tests from nested suites
     for _, nested_suite in ipairs(self._nested_suites) do
       local nested_tests = nested_suite:gather_tests()
@@ -456,12 +486,14 @@ local TestSuite = class 'TestSuite':extends(test.Test) {
           index = test_index,
           name = nested_test.name,
           func = nested_test.func,
-          suite = nested_test.suite or nested_suite  -- Track nested suite
+          suite = nested_test.suite or nested_suite,  -- Track nested suite
+          skip = nested_test.skip,
+          only = nested_test.only
         })
         test_index = test_index + 1
       end
     end
-    
+
     return result
   end,
   
@@ -548,42 +580,69 @@ local TestSuite = class 'TestSuite':extends(test.Test) {
 --- Registers a test case within the current describe context
 -- @param name Test name
 -- @param func Test function
-local function it(name, func)
+-- @param skip Optional flag to skip this test
+-- @param only Optional flag to run only this test
+local function it_impl(name, func, skip, only)
   local context = describe_context_stack[#describe_context_stack]
   if not context then
     error('it() must be called within a describe() block', 2)
   end
-  
+
   -- Build the full name path from the context hierarchy
   local name_path = {}
   for _, ctx in ipairs(describe_context_stack) do
     table.insert(name_path, ctx.name)
   end
   table.insert(name_path, name)
-  
+
   table.insert(context.tests, {
     name = name,
     name_path = name_path,
-    func = func
+    func = func,
+    skip = skip,
+    only = only
   })
 end
 
+-- Create it as a callable table with skip/only methods
+local it = setmetatable({
+  skip = function(name, func)
+    return it_impl(name, func, true, false)
+  end,
+  only = function(name, func)
+    return it_impl(name, func, false, true)
+  end
+}, {
+  __call = function(_, name, func, skip, only)
+    return it_impl(name, func, skip, only)
+  end
+})
+
 -- Alias for it
-local test = it
+local test = setmetatable({
+  skip = it.skip,
+  only = it.only
+}, {
+  __call = function(_, name, func, skip, only)
+    return it_impl(name, func, skip, only)
+  end
+})
 
 --- Creates a test suite (describe block)
 -- @param name Suite name
 -- @param func Function that contains it() calls
-local function describe(name, func)
+-- @param skip Optional flag to skip this suite
+-- @param only Optional flag to run only this suite
+local function describe_impl(name, func, skip, only)
   local parent_context = describe_context_stack[#describe_context_stack]
-  
+
   -- Build the name path from the context hierarchy
   local name_path = {}
   for _, ctx in ipairs(describe_context_stack) do
     table.insert(name_path, ctx.name)
   end
   table.insert(name_path, name)
-  
+
   local context = {
     name = name,
     name_path = name_path,
@@ -593,15 +652,17 @@ local function describe(name, func)
     teardown = llx.noop,
     before_all = llx.noop,
     after_all = llx.noop,
+    skip = skip,
+    only = only,
   }
-  
+
   table.insert(describe_context_stack, context)
-  
+
   -- Execute the describe block to collect tests and nested describes
   local success, err = pcall(func)
-  
+
   table.remove(describe_context_stack)
-  
+
   if not success then
     error('Error in describe block "' .. name .. '": ' .. tostring(err), 2)
   end
@@ -612,7 +673,7 @@ local function describe(name, func)
       TestSuite.__init(self, suite_name, tests, nested_suites, name_path)
     end,
   }
-  
+
   -- Store the test data for later instantiation
   suite_class.__tests_data = context.tests
   suite_class.__nested_suites = context.nested_suites
@@ -621,7 +682,9 @@ local function describe(name, func)
   suite_class.__teardown = context.teardown
   suite_class.__before_all = context.before_all
   suite_class.__after_all = context.after_all
-  
+  suite_class.__skip = context.skip
+  suite_class.__only = context.only
+
   -- Override setup/teardown if provided
   if context.setup ~= llx.noop then
     suite_class.setup = context.setup
@@ -629,7 +692,7 @@ local function describe(name, func)
   if context.teardown ~= llx.noop then
     suite_class.teardown = context.teardown
   end
-  
+
   -- If there's a parent context, add this as a nested suite
   -- Otherwise, add it as a top-level suite
   if parent_context then
@@ -638,6 +701,20 @@ local function describe(name, func)
     test_suites:insert(suite_class)
   end
 end
+
+-- Create describe as a callable table with skip/only methods
+local describe = setmetatable({
+  skip = function(name, func)
+    return describe_impl(name, func, true, false)
+  end,
+  only = function(name, func)
+    return describe_impl(name, func, false, true)
+  end
+}, {
+  __call = function(_, name, func, skip, only)
+    return describe_impl(name, func, skip, only)
+  end
+})
 
 --- Setup function for the current describe block
 -- @param func Setup function
@@ -706,6 +783,15 @@ local function run_tests(filter, logger)
   local total_failure_count = 0
   local total_test_count = 0
 
+  -- Check if any suites have 'only' flag
+  local has_only_suites = false
+  for _, cls in ipairs(test_suites) do
+    if cls.__only then
+      has_only_suites = true
+      break
+    end
+  end
+
   -- Run global beforeAll hooks
   for _, hook in ipairs(global_before_all_hooks) do
     local success, err = pcall(hook)
@@ -716,7 +802,14 @@ local function run_tests(filter, logger)
 
   logger.prelude()
   for _, cls in ipairs(test_suites) do
-    if not filter or cls.__name:match(filter) then
+    -- Skip suites marked as skip
+    if cls.__skip then
+      -- Don't run
+    -- If there are 'only' suites, only run those
+    elseif has_only_suites and not cls.__only then
+      -- Don't run
+    -- Apply name filter if provided
+    elseif not filter or cls.__name:match(filter) then
       local test_object = cls(
         cls.__name,
         cls.__tests_data,
@@ -729,12 +822,12 @@ local function run_tests(filter, logger)
     end
   end
   logger.finale(total_failure_count, total_test_count)
-  
+
   -- Run global afterAll hooks
   for _, hook in ipairs(global_after_all_hooks) do
     pcall(hook)
   end
-  
+
   return total_failure_count, total_test_count
 end
 

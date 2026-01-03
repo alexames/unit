@@ -24,17 +24,17 @@ describe('Mock', function()
     expect(result).to.be_nil()
   end)
 
-  it('should return default value when mockReturnValue is set', function()
+  it('should return default value when mock_return_value is set', function()
     local mock = Mock()
-    mock:mockReturnValue(42)
+    mock:mock_return_value(42)
     expect(mock()).to.be_equal_to(42)
     expect(mock()).to.be_equal_to(42)
     expect(mock()).to.be_equal_to(42)
   end)
 
-  it('should return queued values when mockReturnValueOnce is used', function()
+  it('should return queued values when mock_return_value_once is used', function()
     local mock = Mock()
-    mock:mockReturnValueOnce(1):mockReturnValueOnce(2):mockReturnValueOnce(3)
+    mock:mock_return_value_once(1):mock_return_value_once(2):mock_return_value_once(3)
     expect(mock()).to.be_equal_to(1)
     expect(mock()).to.be_equal_to(2)
     expect(mock()).to.be_equal_to(3)
@@ -43,27 +43,27 @@ describe('Mock', function()
 
   it('should use queued values before default value', function()
     local mock = Mock()
-    mock:mockReturnValue(100)
-    mock:mockReturnValueOnce(1):mockReturnValueOnce(2)
+    mock:mock_return_value(100)
+    mock:mock_return_value_once(1):mock_return_value_once(2)
     expect(mock()).to.be_equal_to(1)
     expect(mock()).to.be_equal_to(2)
     expect(mock()).to.be_equal_to(100) -- Falls back to default
     expect(mock()).to.be_equal_to(100)
   end)
 
-  it('should use custom implementation when mockImplementation is set', function()
+  it('should use custom implementation when mock_implementation is set', function()
     local mock = Mock()
-    mock:mockImplementation(function(x, y)
+    mock:mock_implementation(function(x, y)
       return x + y
     end)
     expect(mock(2, 3)).to.be_equal_to(5)
     expect(mock(10, 20)).to.be_equal_to(30)
   end)
 
-  it('should use queued implementation when mockImplementationOnce is used', function()
+  it('should use queued implementation when mock_implementation_once is used', function()
     local mock = Mock()
-    mock:mockImplementationOnce(function(x) return x * 2 end)
-    mock:mockImplementationOnce(function(x) return x * 3 end)
+    mock:mock_implementation_once(function(x) return x * 2 end)
+    mock:mock_implementation_once(function(x) return x * 3 end)
     expect(mock(5)).to.be_equal_to(10)
     expect(mock(5)).to.be_equal_to(15)
     expect(mock(5)).to.be_nil() -- Queue exhausted, no default
@@ -71,8 +71,8 @@ describe('Mock', function()
 
   it('should prioritize implementation over return value', function()
     local mock = Mock()
-    mock:mockReturnValue(42)
-    mock:mockImplementation(function() return 100 end)
+    mock:mock_return_value(42)
+    mock:mock_implementation(function() return 100 end)
     expect(mock()).to.be_equal_to(100) -- Implementation takes priority
   end)
 
@@ -108,25 +108,25 @@ describe('Mock', function()
     expect(last.args[1]).to.be_equal_to('third')
   end)
 
-  it('should clear call history with mockClear', function()
+  it('should clear call history with mock_clear', function()
     local mock = Mock()
-    mock:mockReturnValue(42)
+    mock:mock_return_value(42)
     mock()
     mock()
     expect(mock:get_call_count()).to.be_equal_to(2)
-    
-    mock:mockClear()
+
+    mock:mock_clear()
     expect(mock:get_call_count()).to.be_equal_to(0)
     expect(mock()).to.be_equal_to(42) -- Implementation still works
   end)
 
-  it('should reset everything with mockReset', function()
+  it('should reset everything with mock_reset', function()
     local mock = Mock()
-    mock:mockReturnValue(42)
-    mock:mockImplementation(function() return 100 end)
+    mock:mock_return_value(42)
+    mock:mock_implementation(function() return 100 end)
     mock()
-    
-    mock:mockReset()
+
+    mock:mock_reset()
     expect(mock:get_call_count()).to.be_equal_to(0)
     expect(mock()).to.be_nil() -- Everything reset
   end)
@@ -199,7 +199,7 @@ describe('Mock', function()
 
   it('should support multiple return values', function()
     local mock = Mock()
-    mock:mockReturnValue(1, 2, 3)
+    mock:mock_return_value(1, 2, 3)
     local a, b, c = mock()
     expect(a).to.be_equal_to(1)
     expect(b).to.be_equal_to(2)
@@ -208,8 +208,8 @@ describe('Mock', function()
 
   it('should support multiple return values in queue', function()
     local mock = Mock()
-    mock:mockReturnValueOnce(1, 2)
-    mock:mockReturnValueOnce(3, 4)
+    mock:mock_return_value_once(1, 2)
+    mock:mock_return_value_once(3, 4)
     local a1, b1 = mock()
     local a2, b2 = mock()
     expect(a1).to.be_equal_to(1)
@@ -444,27 +444,27 @@ describe('spy_on', function()
     }
     
     local spy = spy_on(obj, 'method')
-    spy:mockReturnValue(999)
-    
+    spy:mock_return_value(999)
+
     expect(obj.method(5)).to.be_equal_to(999) -- Overridden
     expect(spy).to.have_been_called_times(1)
     expect(spy).to.have_been_called_with(5)
   end)
 
-  it('should restore original method when mockRestore is called', function()
+  it('should restore original method when mock_restore is called', function()
     local obj = {
       method = function(x)
         return x * 2
       end
     }
-    
+
     local original = obj.method
     local spy = spy_on(obj, 'method')
-    spy:mockReturnValue(999)
-    
+    spy:mock_return_value(999)
+
     expect(obj.method(5)).to.be_equal_to(999)
-    
-    spy:mockRestore()
+
+    spy:mock_restore()
     expect(obj.method(5)).to.be_equal_to(10) -- Original restored
     expect(obj.method).to.be_equal_to(original)
   end)

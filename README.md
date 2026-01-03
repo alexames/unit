@@ -25,7 +25,7 @@ describe('ExampleTest', function()
 
   it('should work with mocks', function()
     local mock = Mock()
-    mock:mockReturnValue(42)
+    mock:mock_return_value(42)
     expect(mock()).to.be_equal_to(42)
     expect(mock).to.have_been_called_times(1)
   end)
@@ -86,7 +86,7 @@ Mocks provide flexible call tracking and behavior control.
 
 ```lua
 local mock = Mock()
-mock:mockReturnValue(42)
+mock:mock_return_value(42)
 local result = mock('hello', 'world')
 expect(mock).to.have_been_called_times(1)
 expect(mock).to.have_been_called_with('hello', 'world')
@@ -98,12 +98,12 @@ expect(mock).to.have_been_called_with('hello', 'world')
 local mock = Mock()
 
 -- Set default return value for all calls
-mock:mockReturnValue(100)
+mock:mock_return_value(100)
 expect(mock()).to.be_equal_to(100)
 expect(mock()).to.be_equal_to(100)
 
 -- Set return value for next call only
-mock:mockReturnValueOnce(1):mockReturnValueOnce(2)
+mock:mock_return_value_once(1):mock_return_value_once(2)
 expect(mock()).to.be_equal_to(1)
 expect(mock()).to.be_equal_to(2)
 expect(mock()).to.be_equal_to(100) -- Falls back to default
@@ -115,13 +115,13 @@ expect(mock()).to.be_equal_to(100) -- Falls back to default
 local mock = Mock()
 
 -- Set default implementation
-mock:mockImplementation(function(x, y)
+mock:mock_implementation(function(x, y)
   return x + y
 end)
 expect(mock(2, 3)).to.be_equal_to(5)
 
 -- Set implementation for next call only
-mock:mockImplementationOnce(function(x) return x * 2 end)
+mock:mock_implementation_once(function(x) return x * 2 end)
 expect(mock(5)).to.be_equal_to(10)
 expect(mock(5)).to.be_equal_to(5) -- Falls back to default
 ```
@@ -167,11 +167,11 @@ expect(result).to.be_equal_to(5) -- Original still works
 expect(spy).to.have_been_called_times(1)
 
 -- Override behavior
-spy:mockReturnValue(999)
+spy:mock_return_value(999)
 expect(obj.method(1, 1)).to.be_equal_to(999)
 
 -- Restore original
-spy:mockRestore()
+spy:mock_restore()
 expect(obj.method(2, 3)).to.be_equal_to(5)
 ```
 
@@ -179,17 +179,17 @@ expect(obj.method(2, 3)).to.be_equal_to(5)
 
 ```lua
 local mock = Mock()
-mock:mockReturnValue(42)
+mock:mock_return_value(42)
 mock()
 mock()
 
 -- Clear call history but keep implementation
-mock:mockClear()
+mock:mock_clear()
 expect(mock:get_call_count()).to.be_equal_to(0)
 expect(mock()).to.be_equal_to(42) -- Still works
 
 -- Reset everything
-mock:mockReset()
+mock:mock_reset()
 expect(mock()).to.be_nil() -- Everything reset
 ```
 
