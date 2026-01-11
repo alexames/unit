@@ -11,6 +11,8 @@ local test_api = require 'unit.test_api'
 --- Executes all registered test suites (describe/it style).
 -- @param[opt] filter A string to match against test suite names
 -- @param[opt] logger An optional logger object to capture output
+-- @return total_failure_count The number of failed tests
+-- @return total_test_count The total number of tests run
 local function run_unit_tests(filter, logger)
   local hierarchical_logger = logger or test_logger.HierarchicalLogger()
   local total_failure_count = 0

@@ -16,6 +16,7 @@ local class = llx.class
 --   expect(mock).to.have_been_called_with('hello', 'world')
 Mock = class 'Mock' {
   --- Constructor
+  -- @param self Mock instance
   -- @param default_return_value Optional default return value for all calls
   __init = function(self, default_return_value)
     self._call_history = {}              -- Array of {args = {...}, return_value = ...}
@@ -33,7 +34,8 @@ Mock = class 'Mock' {
   end;
 
   --- Set a default return value for all calls
-  -- @param ...values Values to return (supports multiple return values)
+  -- @param self Mock instance
+  -- @param ... Values to return (supports multiple return values)
   -- @return self for chaining
   mock_return_value = function(self, ...)
     self._default_return_value = {...}
@@ -44,7 +46,8 @@ Mock = class 'Mock' {
   end;
 
   --- Set a return value for the next call only
-  -- @param ...values Values to return (supports multiple return values)
+  -- @param self Mock instance
+  -- @param ... Values to return (supports multiple return values)
   -- @return self for chaining
   mock_return_value_once = function(self, ...)
     table.insert(self._return_value_queue, {...})
@@ -55,6 +58,7 @@ Mock = class 'Mock' {
   end;
 
   --- Set a default implementation function for all calls
+  -- @param self Mock instance
   -- @param func Function to call when mock is invoked
   -- @return self for chaining
   mock_implementation = function(self, func)
@@ -66,6 +70,7 @@ Mock = class 'Mock' {
   end;
 
   --- Set an implementation function for the next call only
+  -- @param self Mock instance
   -- @param func Function to call when mock is invoked
   -- @return self for chaining
   mock_implementation_once = function(self, func)
@@ -77,6 +82,7 @@ Mock = class 'Mock' {
   end;
 
   --- Clear call history but keep implementation and return values
+  -- @param self Mock instance
   -- @return self for chaining
   mock_clear = function(self)
     self._call_history = {}
@@ -85,6 +91,7 @@ Mock = class 'Mock' {
   end;
 
   --- Reset mock to initial state (clears everything)
+  -- @param self Mock instance
   -- @return self for chaining
   mock_reset = function(self)
     self._call_history = {}
@@ -97,6 +104,7 @@ Mock = class 'Mock' {
   end;
 
   --- Set a name for the mock (for better error messages)
+  -- @param self Mock instance
   -- @param name String name for the mock
   -- @return self for chaining
   mock_name = function(self, name)
@@ -105,6 +113,7 @@ Mock = class 'Mock' {
   end;
 
   --- Set a sequence of return values (one per call)
+  -- @param self Mock instance
   -- @param values Table of values to return in sequence
   -- @return self for chaining
   mock_return_value_sequence = function(self, values)
@@ -115,6 +124,7 @@ Mock = class 'Mock' {
   end;
 
   --- Clear old call history, keeping only the last n calls
+  -- @param self Mock instance
   -- @param keep_last_n Number of recent calls to keep
   -- @return self for chaining
   mock_clear_old_calls = function(self, keep_last_n)
@@ -131,18 +141,21 @@ Mock = class 'Mock' {
   end;
 
   --- Get the number of times the mock has been called
+  -- @param self Mock instance
   -- @return number of calls
   get_call_count = function(self)
     return self._call_count
   end;
 
   --- Get all calls made to the mock
+  -- @param self Mock instance
   -- @return array of call records {args = {...}, return_value = ...}
   get_calls = function(self)
     return self._call_history
   end;
 
   --- Get a specific call by index (1-indexed)
+  -- @param self Mock instance
   -- @param n Call number (1-indexed)
   -- @return call record {args = {...}, return_value = ...} or nil
   get_call = function(self, n)
@@ -150,6 +163,7 @@ Mock = class 'Mock' {
   end;
 
   --- Get the last call made to the mock
+  -- @param self Mock instance
   -- @return call record {args = {...}, return_value = ...} or nil
   get_last_call = function(self)
     return self._call_history[#self._call_history]
@@ -157,6 +171,8 @@ Mock = class 'Mock' {
 
   --- Called when the mock is invoked.
   -- Records the call and returns appropriate value based on configuration.
+  -- @param self Mock instance
+  -- @param ... Arguments passed to the mock
   __call = function(self, ...)
     local args = {...}
     self._call_count = self._call_count + 1
